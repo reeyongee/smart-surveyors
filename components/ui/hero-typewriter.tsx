@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useTransform,
+  animate,
+  AnimatePresence,
+} from "framer-motion";
 
 interface HeroTypewriterProps {
   className?: string;

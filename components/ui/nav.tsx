@@ -1,400 +1,320 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import Link from "next/link";
-
-// Mobile Navigation Icons
-const HomeIcon = ({ active }: { active: boolean }) => (
-  <svg
-    className={`w-6 h-6 ${active ? "text-red-600" : "text-gray-600"}`}
-    fill="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-  </svg>
-);
-
-const ServicesIcon = ({ active }: { active: boolean }) => (
-  <svg
-    className={`w-6 h-6 ${active ? "text-red-600" : "text-gray-600"}`}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-    />
-  </svg>
-);
-
-const ProjectsIcon = ({ active }: { active: boolean }) => (
-  <svg
-    className={`w-6 h-6 ${active ? "text-red-600" : "text-gray-600"}`}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-    />
-  </svg>
-);
-
-const ContactIcon = ({ active }: { active: boolean }) => (
-  <svg
-    className={`w-6 h-6 ${active ? "text-red-600" : "text-gray-600"}`}
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-    />
-  </svg>
-);
-
-const MenuIcon = () => (
-  <svg
-    className="w-6 h-6 text-gray-800"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M4 6h16M4 12h16M4 18h16"
-    />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg
-    className="w-6 h-6 text-gray-800"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M6 18L18 6M6 6l12 12"
-    />
-  </svg>
-);
-
-const PhoneIcon = () => (
-  <svg
-    className="w-5 h-5"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-    />
-  </svg>
-);
 
 export default function Nav() {
-  const [activeTab, setActiveTab] = useState("home");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  // Mobile detection and viewport setup
+  // Enhanced mobile detection with touch support
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const isMobileDevice =
+        window.innerWidth <= 768 ||
+        "ontouchstart" in window ||
+        navigator.maxTouchPoints > 0;
+      setIsMobile(isMobileDevice);
     };
 
     checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  // Handle menu close on route change
-  useEffect(() => {
-    // Close menu when clicking outside
-    const handleClickOutside = (event: MouseEvent) => {
-      const menu = document.querySelector(".mobile-menu");
-      const menuButton = document.querySelector(".menu-button");
-
-      if (
-        menu &&
-        !menu.contains(event.target as Node) &&
-        menuButton &&
-        !menuButton.contains(event.target as Node) &&
-        isMenuOpen
-      ) {
-        setIsMenuOpen(false);
+    const handleResize = () => {
+      checkMobile();
+      // Close mobile menu on resize to desktop
+      if (window.innerWidth > 768 && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
       }
     };
 
-    document.addEventListener("click", handleClickOutside);
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [isMenuOpen]);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isMobileMenuOpen]);
 
-  // Prevent body scroll when menu is open
+  // Track scroll position for nav styling
   useEffect(() => {
-    if (isMenuOpen && isMobile) {
-      document.body.classList.add("overflow-hidden");
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close mobile menu when clicking outside or pressing escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const nav = document.querySelector("nav");
+      const target = event.target as Node;
+
+      if (nav && !nav.contains(target) && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside, {
+        passive: true,
+      });
+      document.addEventListener("keydown", handleKeyDown);
+
+      // Prevent body scroll when menu is open
+      document.body.classList.add("mobile-menu-open");
     } else {
-      document.body.classList.remove("overflow-hidden");
+      document.body.classList.remove("mobile-menu-open");
     }
 
     return () => {
-      document.body.classList.remove("overflow-hidden");
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.classList.remove("mobile-menu-open");
     };
-  }, [isMenuOpen, isMobile]);
+  }, [isMobileMenuOpen]);
 
-  const navigationItems = [
-    { id: "home", label: "Home", href: "#home", icon: HomeIcon },
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen((prev) => !prev);
+  }, []);
+
+  const closeMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
+
+  // Navigation items with proper accessibility
+  const navItems = [
+    { href: "#home", label: "Home", ariaLabel: "Navigate to home section" },
+    { href: "#about", label: "About", ariaLabel: "Navigate to about section" },
     {
-      id: "services",
-      label: "Services",
       href: "#services",
-      icon: ServicesIcon,
+      label: "Services",
+      ariaLabel: "Navigate to services section",
     },
-    { id: "projects", label: "Projects", href: "#stats", icon: ProjectsIcon },
-    { id: "contact", label: "Contact", href: "#contact", icon: ContactIcon },
+    {
+      href: "#contact",
+      label: "Contact",
+      ariaLabel: "Navigate to contact section",
+    },
   ];
 
-  const secondaryMenuItems = [
-    { label: "About Us", href: "#about" },
-    { label: "Testimonials", href: "#testimonials" },
-    { label: "Blog", href: "/blog" },
-    { label: "Quote Request", href: "#quote" },
-  ];
+  // Handle smooth scrolling with proper focus management
+  const handleNavClick = useCallback(
+    (href: string, event: React.MouseEvent) => {
+      event.preventDefault();
 
-  const handleTabClick = (tabId: string, href: string) => {
-    setActiveTab(tabId);
+      const targetId = href.substring(1);
+      const targetElement = document.getElementById(targetId);
 
-    // Smooth scroll to section
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+      if (targetElement) {
+        // Close mobile menu first
+        closeMobileMenu();
 
-  const handleCall = () => {
-    window.location.href = "tel:+1234567890";
-  };
+        // Smooth scroll to target
+        targetElement.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest",
+        });
+
+        // Update URL without triggering navigation
+        history.replaceState(null, "", href);
+
+        // Set focus to target for accessibility
+        setTimeout(() => {
+          targetElement.focus({ preventScroll: true });
+        }, 500);
+      }
+    },
+    [closeMobileMenu]
+  );
 
   return (
-    <>
-      {/* Top Navigation Bar */}
-      <nav className="mobile-nav">
-        <div className="container mx-auto h-full flex items-center justify-between">
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm"
+          : "bg-white/90 backdrop-blur-sm"
+      }`}
+      role="navigation"
+      aria-label="Main navigation"
+    >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 touch-target">
-            <Image
-              src="/logo.svg"
-              alt="Smart Surveyors Logo"
-              width={32}
-              height={32}
-              className="w-8 h-8"
-            />
-            <span className="font-bold text-lg text-gray-800 hidden-mobile">
-              Smart Surveyors
-            </span>
-          </Link>
+          <div className="flex-shrink-0">
+            <a
+              href="#home"
+              onClick={(e) => handleNavClick("#home", e)}
+              className="flex items-center space-x-2 touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded-lg p-2 -m-2"
+              aria-label="Smart Surveyors - Go to home"
+            >
+              <Image
+                src="/logo.svg"
+                alt="Smart Surveyors Logo"
+                width={40}
+                height={40}
+                className="w-8 h-8 sm:w-10 sm:h-10"
+                priority
+              />
+              <span className="font-playfair font-bold text-lg sm:text-xl text-red-600 hidden sm:block">
+                Smart Surveyors
+              </span>
+            </a>
+          </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={`touch-target px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === item.id
-                    ? "text-red-600 bg-red-50"
-                    : "text-gray-700 hover:text-red-600 hover:bg-gray-50"
-                }`}
-                onClick={() => handleTabClick(item.id, item.href)}
-              >
-                {item.label}
-              </Link>
-            ))}
+          <div className="hidden md:block">
+            <div className="ml-10 flex items-baseline space-x-1">
+              {navItems.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={(e) => handleNavClick(item.href, e)}
+                  className="px-4 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition-all duration-200 font-medium touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  aria-label={item.ariaLabel}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
           </div>
 
-          {/* Desktop CTA */}
-          <div className="hidden md:flex items-center space-x-4">
-            <button
-              onClick={handleCall}
-              className="btn-secondary flex items-center space-x-2"
+          {/* CTA Button - Desktop */}
+          <div className="hidden md:block">
+            <a
+              href="#contact"
+              onClick={(e) => handleNavClick("#contact", e)}
+              className="btn btn-primary inline-flex items-center justify-center px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+              aria-label="Get a quote - Contact us"
             >
-              <PhoneIcon />
-              <span>Call Now</span>
-            </button>
-            <Link href="#quote" className="btn-primary">
               Get Quote
-            </Link>
+            </a>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="menu-button md:hidden touch-target-comfortable"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
-          </button>
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <button
+              onClick={toggleMobileMenu}
+              className="inline-flex items-center justify-center p-3 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 touch-manipulation"
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              style={{ minWidth: "48px", minHeight: "48px" }} // Ensure 48x48px touch target
+            >
+              <span className="sr-only">
+                {isMobileMenuOpen ? "Close menu" : "Open menu"}
+              </span>
+
+              {/* Animated hamburger icon */}
+              <div className="w-6 h-6 relative">
+                <span
+                  className={`absolute block h-0.5 w-6 bg-current transform transition-all duration-300 ${
+                    isMobileMenuOpen ? "rotate-45 top-3" : "top-1"
+                  }`}
+                />
+                <span
+                  className={`absolute block h-0.5 w-6 bg-current transform transition-all duration-300 top-3 ${
+                    isMobileMenuOpen ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+                <span
+                  className={`absolute block h-0.5 w-6 bg-current transform transition-all duration-300 ${
+                    isMobileMenuOpen ? "-rotate-45 top-3" : "top-5"
+                  }`}
+                />
+              </div>
+            </button>
+          </div>
         </div>
-      </nav>
+      </div>
 
-      {/* Mobile Hamburger Menu Overlay */}
-      {isMenuOpen && isMobile && (
-        <div className="mobile-menu fixed inset-0 z-50 md:hidden">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
-            onClick={() => setIsMenuOpen(false)}
-          />
+      {/* Mobile menu */}
+      <div
+        id="mobile-menu"
+        className={`md:hidden fixed inset-0 top-16 sm:top-20 z-40 transform transition-all duration-300 ease-in-out ${
+          isMobileMenuOpen
+            ? "translate-x-0 opacity-100 visible"
+            : "translate-x-full opacity-0 invisible"
+        }`}
+        aria-hidden={!isMobileMenuOpen}
+      >
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm"
+          onClick={closeMobileMenu}
+          aria-hidden="true"
+        />
 
-          {/* Menu Content */}
-          <div className="absolute right-0 top-0 h-full w-80 max-w-sm bg-white shadow-xl overflow-y-auto">
-            <div className="safe-top p-6">
-              {/* Menu Header */}
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center space-x-2">
-                  <Image
-                    src="/logo.svg"
-                    alt="Smart Surveyors"
-                    width={24}
-                    height={24}
-                  />
-                  <span className="font-bold text-lg">Smart Surveyors</span>
-                </div>
-                <button
-                  onClick={() => setIsMenuOpen(false)}
-                  className="touch-target"
-                  aria-label="Close menu"
-                >
-                  <CloseIcon />
-                </button>
-              </div>
+        {/* Menu panel */}
+        <div className="mobile-menu relative bg-white/98 backdrop-blur-md h-full overflow-y-auto">
+          <div className="px-4 py-6 space-y-2">
+            {/* Mobile navigation items */}
+            {navItems.map((item, index) => (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={(e) => handleNavClick(item.href, e)}
+                className="block w-full text-left px-6 py-4 rounded-xl text-lg font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 transition-all duration-200 touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                style={{ minHeight: "56px" }} // Extra touch-friendly height for mobile
+                aria-label={item.ariaLabel}
+                tabIndex={isMobileMenuOpen ? 0 : -1}
+              >
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-red-600 rounded-full mr-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                  {item.label}
+                </span>
+              </a>
+            ))}
 
-              {/* Primary Navigation */}
-              <div className="space-y-2 mb-8">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-                  Navigation
-                </h3>
-                {navigationItems.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                      activeTab === item.id
-                        ? "bg-red-50 text-red-600"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                    onClick={() => {
-                      handleTabClick(item.id, item.href);
-                      setIsMenuOpen(false);
-                    }}
-                  >
-                    <item.icon active={activeTab === item.id} />
-                    <span className="font-medium">{item.label}</span>
-                  </Link>
-                ))}
-              </div>
+            {/* Mobile CTA Button */}
+            <div className="pt-6 px-6">
+              <a
+                href="#contact"
+                onClick={(e) => handleNavClick("#contact", e)}
+                className="btn btn-primary w-full inline-flex items-center justify-center px-6 py-4 text-base font-medium rounded-xl transition-all duration-200 touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                style={{ minHeight: "56px" }} // Extra touch-friendly height
+                aria-label="Get a quote - Contact us"
+                tabIndex={isMobileMenuOpen ? 0 : -1}
+              >
+                Get Quote
+              </a>
+            </div>
 
-              {/* Secondary Menu */}
-              <div className="space-y-2 mb-8">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-                  More
-                </h3>
-                {secondaryMenuItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="block p-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-
-              {/* Contact Actions */}
-              <div className="space-y-3 pt-6 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    handleCall();
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full btn-secondary flex items-center justify-center space-x-2"
-                >
-                  <PhoneIcon />
-                  <span>Call (555) 123-4567</span>
-                </button>
-                <Link
-                  href="#quote"
-                  className="w-full btn-primary text-center block"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Get Free Quote
-                </Link>
-              </div>
-
-              {/* Contact Info */}
-              <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-600">
-                <p className="mb-2">
-                  <strong className="text-gray-800">Email:</strong>
-                  <br />
-                  info@smartsurveyors.com
+            {/* Contact info in mobile menu */}
+            <div className="pt-8 px-6 border-t border-gray-200 mt-8">
+              <div className="text-sm text-gray-600 space-y-2">
+                <p className="font-medium text-gray-900">
+                  Ready to get started?
                 </p>
                 <p>
-                  <strong className="text-gray-800">Address:</strong>
-                  <br />
-                  123 Survey Street
-                  <br />
-                  Your City, ST 12345
+                  Call us at{" "}
+                  <a
+                    href="tel:+1234567890"
+                    className="text-red-600 hover:text-red-700 font-medium"
+                  >
+                    (123) 456-7890
+                  </a>
+                </p>
+                <p>
+                  Or{" "}
+                  <a
+                    href="mailto:info@smartsurveyors.com"
+                    className="text-red-600 hover:text-red-700 font-medium"
+                  >
+                    email us
+                  </a>
                 </p>
               </div>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Bottom Navigation (Mobile Only) */}
-      <nav className="bottom-nav md:hidden">
-        <div className="flex items-center justify-around h-full safe-bottom">
-          {navigationItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleTabClick(item.id, item.href)}
-              className="touch-target-comfortable flex flex-col items-center justify-center space-y-1 transition-colors"
-            >
-              <item.icon active={activeTab === item.id} />
-              <span
-                className={`text-xs font-medium ${
-                  activeTab === item.id ? "text-red-600" : "text-gray-600"
-                }`}
-              >
-                {item.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </nav>
-    </>
+      </div>
+    </nav>
   );
 }
