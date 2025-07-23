@@ -127,6 +127,63 @@ export default function Home() {
     dots[index]?.classList.add("active");
   }, []);
 
+  // Mobile viewport height fix
+  useEffect(() => {
+    const setMobileVH = () => {
+      // Calculate the actual viewport height
+      const vh = window.innerHeight * 0.01;
+      const mobileVh = window.innerHeight * 0.01;
+
+      // Set custom properties for both desktop and mobile
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+      document.documentElement.style.setProperty(
+        "--mobile-vh",
+        `${mobileVh}px`
+      );
+    };
+
+    // Set initial values
+    setMobileVH();
+
+    // Update on resize and orientation change
+    window.addEventListener("resize", setMobileVH);
+    window.addEventListener("orientationchange", () => {
+      // Delay to account for browser UI changes
+      setTimeout(setMobileVH, 100);
+    });
+
+    // Visual viewport API support for better mobile handling
+    if (window.visualViewport) {
+      const handleVisualViewportChange = () => {
+        if (window.visualViewport) {
+          const vh = window.visualViewport.height * 0.01;
+          document.documentElement.style.setProperty("--mobile-vh", `${vh}px`);
+        }
+      };
+
+      window.visualViewport.addEventListener(
+        "resize",
+        handleVisualViewportChange
+      );
+
+      return () => {
+        window.removeEventListener("resize", setMobileVH);
+        window.removeEventListener("orientationchange", setMobileVH);
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener(
+            "resize",
+            handleVisualViewportChange
+          );
+        }
+      };
+    }
+
+    return () => {
+      window.removeEventListener("resize", setMobileVH);
+      window.removeEventListener("orientationchange", setMobileVH);
+    };
+  }, []);
+
   // Single useEffect that runs only once on mount
   useEffect(() => {
     if (!particlesLoaded) return;
@@ -766,6 +823,8 @@ export default function Home() {
               className="reveal max-w-4xl mb-8 md:mb-16 mt-8"
               style={{
                 padding: "24px 32px",
+                position: "relative",
+                zIndex: 12,
               }}
             >
               <div className="relative">
@@ -775,10 +834,10 @@ export default function Home() {
                     position: "absolute",
                     top: "50%",
                     left: "50%",
-                    width: "120%",
-                    height: "120%",
+                    width: "150%",
+                    height: "150%",
                     background:
-                      "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 80%)",
+                      "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.4) 40%, rgba(255, 255, 255, 0) 80%)",
                     filter: "blur(40px)",
                     transform: "translate(-50%, -50%) scaleX(1.5) scaleY(1)",
                     zIndex: -1,
@@ -791,6 +850,7 @@ export default function Home() {
                     fontSize: "clamp(32px, 8vw, 88px)",
                     lineHeight: "0.9",
                     color: "#db2225",
+                    zIndex: 1,
                   }}
                 >
                   Proof, in Every Plot.
@@ -803,10 +863,10 @@ export default function Home() {
                     position: "absolute",
                     top: "50%",
                     left: "50%",
-                    width: "110%",
-                    height: "110%",
+                    width: "140%",
+                    height: "140%",
                     background:
-                      "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 80%)",
+                      "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.4) 40%, rgba(255, 255, 255, 0) 80%)",
                     filter: "blur(40px)",
                     transform: "translate(-50%, -50%) scaleX(1.5) scaleY(1)",
                     zIndex: -1,
@@ -818,6 +878,7 @@ export default function Home() {
                   style={{
                     fontSize: "clamp(16px, 4vw, 22px)",
                     lineHeight: "1.6",
+                    zIndex: 1,
                   }}
                 >
                   For more than a decade, we&apos;ve been the trusted starting
@@ -876,7 +937,7 @@ export default function Home() {
           <div className="container mx-auto h-full flex flex-col justify-center px-4 md:px-8 pt-16 md:pt-24">
             <h2
               className="font-heading font-semibold heading-tight mb-8 md:mb-16 text-center reveal text-black"
-              style={{ fontSize: "clamp(48px, 6vw, 72px)", lineHeight: "0.9" }}
+              style={{ fontSize: "clamp(40px, 6vw, 72px)", lineHeight: "0.9" }}
             >
               Our Services
             </h2>
