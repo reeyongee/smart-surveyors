@@ -13,6 +13,12 @@ declare global {
   }
 }
 
+// Mobile viewport height fix
+function setViewportHeight() {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty("--vh", `${vh}px`);
+}
+
 // Stats Counter Component
 const StatsCounter = ({
   value,
@@ -88,6 +94,7 @@ export default function Home() {
   const [touchStartTime, setTouchStartTime] = useState(0);
   const [isTouchDragging, setIsTouchDragging] = useState(false);
   const [particlesLoaded, setParticlesLoaded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const wheelDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -97,6 +104,44 @@ export default function Home() {
   const touchStartYRef = useRef(touchStartY);
   const touchStartTimeRef = useRef(touchStartTime);
   const isTouchDraggingRef = useRef(isTouchDragging);
+
+  // Mobile detection and viewport setup
+  useEffect(() => {
+    // Mobile detection
+    const checkMobile = () => {
+      const isMobileDevice =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        ) ||
+        window.innerWidth <= 768 ||
+        "ontouchstart" in window;
+      setIsMobile(isMobileDevice);
+    };
+
+    // Set initial viewport height
+    setViewportHeight();
+    checkMobile();
+
+    // Update on resize and orientation change
+    const handleResize = () => {
+      setViewportHeight();
+      checkMobile();
+    };
+
+    const handleOrientationChange = () => {
+      setTimeout(() => {
+        setViewportHeight();
+      }, 100);
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleOrientationChange);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleOrientationChange);
+    };
+  }, []);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -127,12 +172,9 @@ export default function Home() {
     dots[index]?.classList.add("active");
   }, []);
 
-  // Single useEffect that runs only once on mount
-  useEffect(() => {
-    if (!particlesLoaded) return;
-
-    // Define changeSection inside useEffect to avoid dependency issues
-    const changeSection = (index: number) => {
+  // Enhanced section change function with mobile optimizations
+  const changeSection = useCallback(
+    (index: number) => {
       const sections = document.querySelectorAll(".section");
       sections.forEach((section) => {
         section.classList.remove("active");
@@ -156,13 +198,27 @@ export default function Home() {
           });
         }
       });
-    };
 
-    // Initialize particles.js
+      // Haptic feedback on mobile
+      if (isMobile && "vibrate" in navigator) {
+        navigator.vibrate(50);
+      }
+    },
+    [updateActiveDot, isMobile]
+  );
+
+  // Single useEffect that runs only once on mount
+  useEffect(() => {
+    if (!particlesLoaded) return;
+
+    // Initialize particles.js with mobile optimizations
     if (typeof window !== "undefined" && window.particlesJS) {
-      window.particlesJS("particles-js", {
+      const particleConfig = {
         particles: {
-          number: { value: 25, density: { enable: true, value_area: 800 } },
+          number: {
+            value: isMobile ? 15 : 25, // Fewer particles on mobile for better performance
+            density: { enable: true, value_area: 800 },
+          },
           color: {
             value: ["#db2225", "#E0C097", "#000000", "#374151"],
           },
@@ -171,7 +227,7 @@ export default function Home() {
             stroke: { width: 2, color: "#db2225" },
           },
           opacity: {
-            value: 0.7,
+            value: isMobile ? 0.5 : 0.7, // Reduced opacity on mobile
             random: true,
             anim: {
               enable: true,
@@ -181,7 +237,7 @@ export default function Home() {
             },
           },
           size: {
-            value: 4,
+            value: isMobile ? 3 : 4, // Smaller particles on mobile
             random: true,
             anim: {
               enable: true,
@@ -192,26 +248,26 @@ export default function Home() {
           },
           line_linked: {
             enable: true,
-            distance: 200,
+            distance: isMobile ? 150 : 200, // Shorter connections on mobile
             color: "#db2225",
-            opacity: 0.6,
+            opacity: isMobile ? 0.4 : 0.6,
             width: 2,
             shadow: {
-              enable: true,
+              enable: !isMobile, // Disable shadows on mobile for performance
               color: "#E0C097",
               blur: 3,
             },
           },
           move: {
             enable: true,
-            speed: 1.5,
+            speed: isMobile ? 1 : 1.5, // Slower movement on mobile
             direction: "none",
             random: true,
             straight: false,
             out_mode: "bounce",
             bounce: true,
             attract: {
-              enable: true,
+              enable: !isMobile, // Disable attraction on mobile for performance
               rotateX: 600,
               rotateY: 1200,
             },
@@ -221,7 +277,7 @@ export default function Home() {
           detect_on: "canvas",
           events: {
             onhover: {
-              enable: true,
+              enable: !isMobile, // Disable hover on mobile
               mode: ["grab", "bubble"],
             },
             onclick: {
@@ -255,8 +311,9 @@ export default function Home() {
           },
         },
         retina_detect: true,
-      });
+      };
 
+      window.particlesJS("particles-js", particleConfig);
       addSurveyMeasurements();
     }
 
@@ -276,22 +333,24 @@ export default function Home() {
 
     updateActiveDot(currentIndex);
 
-    // Magnetic effect
-    magneticElements.forEach((el) => {
-      const element = el as HTMLElement;
-      element.addEventListener("mousemove", (e) => {
-        const rect = element.getBoundingClientRect();
-        const x = e.clientX - rect.left - rect.width / 2;
-        const y = e.clientY - rect.top - rect.height / 2;
-        element.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px)`;
-      });
+    // Magnetic effect (disabled on mobile for performance)
+    if (!isMobile) {
+      magneticElements.forEach((el) => {
+        const element = el as HTMLElement;
+        element.addEventListener("mousemove", (e) => {
+          const rect = element.getBoundingClientRect();
+          const x = e.clientX - rect.left - rect.width / 2;
+          const y = e.clientY - rect.top - rect.height / 2;
+          element.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px)`;
+        });
 
-      element.addEventListener("mouseleave", () => {
-        element.style.transform = "translate(0px, 0px)";
+        element.addEventListener("mouseleave", () => {
+          element.style.transform = "translate(0px, 0px)";
+        });
       });
-    });
+    }
 
-    // Scroll event handler - uses refs to avoid stale closures
+    // Enhanced wheel event handler for desktop
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
 
@@ -327,10 +386,10 @@ export default function Home() {
       const absDeltaY = Math.abs(deltaY);
 
       // Define thresholds for valid scroll gestures
-      const minScrollThreshold = 30; // Increased minimum scroll delta
-      const maxScrollThreshold = 150; // Decreased maximum scroll delta to catch over-scrolls
+      const minScrollThreshold = 30;
+      const maxScrollThreshold = 150;
 
-      // Check if this is a reasonable scroll gesture (not too small, not too large)
+      // Check if this is a reasonable scroll gesture
       const isValidScroll =
         absDeltaY >= minScrollThreshold && absDeltaY <= maxScrollThreshold;
 
@@ -352,12 +411,10 @@ export default function Home() {
             clearTimeout(scrollTimeoutRef.current);
           }
 
-          // Use functional updates to avoid stale closures
           setIsScrolling(true);
           setCurrentIndex(newIndex);
           changeSection(newIndex);
 
-          // Reduced timeout for better responsiveness
           scrollTimeoutRef.current = setTimeout(() => {
             setIsScrolling(false);
             scrollTimeoutRef.current = null;
@@ -366,11 +423,15 @@ export default function Home() {
       }
     };
 
-    // Touch event handlers
+    // Enhanced touch event handlers with better mobile support
     const handleTouchStart = (e: TouchEvent) => {
-      setTouchStartY(e.touches[0].clientY);
+      const touch = e.touches[0];
+      setTouchStartY(touch.clientY);
       setTouchStartTime(Date.now());
       setIsTouchDragging(false);
+
+      // Prevent default behavior to avoid scrolling issues
+      e.preventDefault();
     };
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -378,11 +439,14 @@ export default function Home() {
         const currentY = e.touches[0].clientY;
         const diff = Math.abs(touchStartYRef.current - currentY);
 
-        // If user has moved more than 20px, consider it dragging/scrubbing
-        if (diff > 20) {
+        // If user has moved more than 15px, consider it dragging
+        if (diff > 15) {
           setIsTouchDragging(true);
         }
       }
+
+      // Prevent default to avoid page bounce
+      e.preventDefault();
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
@@ -399,23 +463,22 @@ export default function Home() {
       const currentIdx = currentIndexRef.current;
       let newIndex = currentIdx;
 
-      // Enhanced swipe detection with velocity and duration constraints
-      const minSwipeDistance = 80; // Minimum swipe distance in pixels
-      const maxSwipeDuration = 800; // Maximum swipe duration in milliseconds
-      const minVelocity = 0.1; // Minimum velocity to be considered intentional
-      const maxVelocity = 2.0; // Maximum velocity to prevent overly fast gestures
+      // Enhanced swipe detection optimized for mobile
+      const minSwipeDistance = isMobile ? 50 : 80; // Lower threshold for mobile
+      const maxSwipeDuration = 1000; // Increased duration for better accessibility
+      const minVelocity = 0.05; // Lower velocity threshold
+      const maxVelocity = 3.0; // Higher max velocity
 
-      // If user was dragging/scrubbing extensively, require higher thresholds
-      const isDraggingGesture = isTouchDraggingRef.current;
-      const adjustedMinDistance = isDraggingGesture ? 120 : minSwipeDistance;
-      const adjustedMaxDuration = isDraggingGesture ? 600 : maxSwipeDuration;
+      // More lenient swipe detection for mobile
+      const isDraggingGesture =
+        isTouchDraggingRef.current && Math.abs(diff) > 100;
+      const adjustedMinDistance = isDraggingGesture ? 80 : minSwipeDistance;
 
       const isValidSwipe =
         Math.abs(diff) > adjustedMinDistance &&
-        touchDuration < adjustedMaxDuration &&
+        touchDuration < maxSwipeDuration &&
         velocity > minVelocity &&
-        velocity < maxVelocity &&
-        !isDraggingGesture; // Prevent navigation if user was actively dragging
+        velocity < maxVelocity;
 
       if (isValidSwipe) {
         if (diff > 0) {
@@ -442,15 +505,17 @@ export default function Home() {
         setCurrentIndex(newIndex);
         changeSection(newIndex);
 
-        // Reduced timeout for better responsiveness
         scrollTimeoutRef.current = setTimeout(() => {
           setIsScrolling(false);
           scrollTimeoutRef.current = null;
-        }, 800);
+        }, 600); // Shorter timeout for mobile
       }
+
+      // Reset touch state
+      setIsTouchDragging(false);
     };
 
-    // Dot click handler
+    // Dot click handler with touch improvements
     const handleDotClick = (e: Event) => {
       if (isScrollingRef.current) return;
 
@@ -468,33 +533,49 @@ export default function Home() {
         setCurrentIndex(index);
         changeSection(index);
 
-        // Set timeout with ref to ensure proper cleanup
+        // Shorter timeout for better mobile responsiveness
         scrollTimeoutRef.current = setTimeout(() => {
           setIsScrolling(false);
           scrollTimeoutRef.current = null;
-        }, 1100);
+        }, 800);
       }
     };
 
-    // Add event listeners
+    // Add event listeners with passive options for better mobile performance
     dots.forEach((dot) => {
       dot.addEventListener("click", handleDotClick);
+      // Add touch events for better mobile support
+      if (isMobile) {
+        dot.addEventListener("touchstart", handleDotClick, { passive: false });
+      }
     });
 
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    document.addEventListener("touchstart", handleTouchStart);
-    document.addEventListener("touchmove", handleTouchMove, { passive: true });
-    document.addEventListener("touchend", handleTouchEnd);
+    // Only add wheel events on non-mobile devices
+    if (!isMobile) {
+      window.addEventListener("wheel", handleWheel, { passive: false });
+    }
+
+    // Touch events for mobile navigation
+    document.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("touchend", handleTouchEnd, { passive: false });
 
     // Cleanup function
     return () => {
-      window.removeEventListener("wheel", handleWheel);
+      if (!isMobile) {
+        window.removeEventListener("wheel", handleWheel);
+      }
       document.removeEventListener("touchstart", handleTouchStart);
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
 
       dots.forEach((dot) => {
         dot.removeEventListener("click", handleDotClick);
+        if (isMobile) {
+          dot.removeEventListener("touchstart", handleDotClick);
+        }
       });
 
       // Clear any pending timeouts
@@ -507,7 +588,7 @@ export default function Home() {
         wheelDebounceRef.current = null;
       }
     };
-  }, [particlesLoaded, updateActiveDot]);
+  }, [particlesLoaded, updateActiveDot, changeSection, isMobile]);
 
   const addSurveyMeasurements = () => {
     const particlesContainer = document.getElementById("particles-js");
@@ -519,19 +600,28 @@ export default function Home() {
     );
     existingMeasurements.forEach((el) => el.remove());
 
-    // Survey measurement data
-    const surveyData = [
-      { text: "N 45°12'30\" E", x: 15, y: 20 },
-      { text: "125.50'", x: 80, y: 15 },
-      { text: "S 22°45'15\" W", x: 25, y: 75 },
-      { text: "89.25'", x: 70, y: 80 },
-      { text: "Elev: 1,245.6'", x: 50, y: 50 },
-      { text: "BM #23", x: 85, y: 45 },
-      { text: "POB", x: 10, y: 85 },
-      { text: "N 78°30'00\" W", x: 60, y: 25 },
-      { text: "156.75'", x: 35, y: 60 },
-      { text: "IP #1", x: 90, y: 70 },
-    ];
+    // Survey measurement data - reduced for mobile
+    const surveyData = isMobile
+      ? [
+          { text: "N 45°12'30\" E", x: 15, y: 20 },
+          { text: "125.50'", x: 80, y: 15 },
+          { text: "S 22°45'15\" W", x: 25, y: 75 },
+          { text: "89.25'", x: 70, y: 80 },
+          { text: "Elev: 1,245.6'", x: 50, y: 50 },
+          { text: "BM #23", x: 85, y: 45 },
+        ]
+      : [
+          { text: "N 45°12'30\" E", x: 15, y: 20 },
+          { text: "125.50'", x: 80, y: 15 },
+          { text: "S 22°45'15\" W", x: 25, y: 75 },
+          { text: "89.25'", x: 70, y: 80 },
+          { text: "Elev: 1,245.6'", x: 50, y: 50 },
+          { text: "BM #23", x: 85, y: 45 },
+          { text: "POB", x: 10, y: 85 },
+          { text: "N 78°30'00\" W", x: 60, y: 25 },
+          { text: "156.75'", x: 35, y: 60 },
+          { text: "IP #1", x: 90, y: 70 },
+        ];
 
     surveyData.forEach((data, index) => {
       const measurementEl = document.createElement("div");
@@ -543,7 +633,7 @@ export default function Home() {
         top: ${data.y}%;
         color: ${index % 2 === 0 ? "#db2225" : "#000000"};
         font-family: 'Inter', sans-serif;
-        font-size: 12px;
+        font-size: ${isMobile ? "10px" : "12px"};
         font-weight: 500;
         text-shadow: 1px 1px 2px rgba(224, 192, 151, 0.3);
         pointer-events: none;
@@ -566,12 +656,36 @@ export default function Home() {
       <div className="bg-white text-black font-body">
         <Nav />
 
-        {/* Progress Indicator */}
+        {/* Progress Indicator - Enhanced for mobile */}
         <div className="progress-bar">
-          <div className="progress-dot" data-index="0"></div>
-          <div className="progress-dot" data-index="1"></div>
-          <div className="progress-dot" data-index="2"></div>
-          <div className="progress-dot" data-index="3"></div>
+          <div
+            className="progress-dot"
+            data-index="0"
+            role="button"
+            aria-label="Go to section 1"
+            tabIndex={0}
+          ></div>
+          <div
+            className="progress-dot"
+            data-index="1"
+            role="button"
+            aria-label="Go to section 2"
+            tabIndex={0}
+          ></div>
+          <div
+            className="progress-dot"
+            data-index="2"
+            role="button"
+            aria-label="Go to section 3"
+            tabIndex={0}
+          ></div>
+          <div
+            className="progress-dot"
+            data-index="3"
+            role="button"
+            aria-label="Go to section 4"
+            tabIndex={0}
+          ></div>
         </div>
 
         {/* Sections */}
@@ -595,7 +709,7 @@ export default function Home() {
             style={{ position: "relative", zIndex: 2 }}
           >
             <HeroTypewriter className="reveal active" />
-            {/* Mobile and desktop button positioning */}
+            {/* Mobile and desktop button positioning - improved for mobile */}
             <div
               className="reveal active mt-8 md:mt-0 md:absolute md:top-[650px] md:left-8"
               style={{
@@ -603,14 +717,26 @@ export default function Home() {
               }}
             >
               <button
-                className="bg-red-500 text-white px-8 py-3 md:px-12 md:py-4 font-body transition-all duration-300 magnetic text-base md:text-lg tracking-wide w-full md:w-auto"
+                className="bg-red-500 text-white px-8 py-4 md:px-12 md:py-4 font-body transition-all duration-300 magnetic text-base md:text-lg tracking-wide w-full md:w-auto rounded-lg md:rounded-none"
                 style={{
                   backgroundColor: "#ef4444",
+                  minHeight: "48px", // Touch-friendly height
+                  fontSize: "16px", // Prevent zoom on iOS
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#991b1b";
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#991b1b";
+                  }
                 }}
                 onMouseLeave={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#ef4444";
+                  }
+                }}
+                onTouchStart={(e) => {
+                  e.currentTarget.style.backgroundColor = "#991b1b";
+                }}
+                onTouchEnd={(e) => {
                   e.currentTarget.style.backgroundColor = "#ef4444";
                 }}
                 onClick={() => {
@@ -624,36 +750,12 @@ export default function Home() {
 
                     setIsScrolling(true);
                     setCurrentIndex(1);
-
-                    // Section change logic inline
-                    const sections = document.querySelectorAll(".section");
-                    sections.forEach((section) => {
-                      section.classList.remove("active");
-                    });
-                    sections[1]?.classList.add("active");
-                    updateActiveDot(1);
-
-                    const reveals = sections[1]?.querySelectorAll(".reveal");
-                    reveals?.forEach((el, i) => {
-                      setTimeout(() => {
-                        el.classList.add("active");
-                      }, i * 75);
-                    });
-
-                    sections.forEach((section, i) => {
-                      if (i !== 1) {
-                        const otherReveals =
-                          section.querySelectorAll(".reveal");
-                        otherReveals.forEach((el) => {
-                          el.classList.remove("active");
-                        });
-                      }
-                    });
+                    changeSection(1);
 
                     scrollTimeoutRef.current = setTimeout(() => {
                       setIsScrolling(false);
                       scrollTimeoutRef.current = null;
-                    }, 1100);
+                    }, 800);
                   }
                 }}
               >
@@ -796,20 +898,32 @@ export default function Home() {
               />
             </div>
 
-            {/* Explore Projects Button - Centered */}
+            {/* Explore Projects Button - Centered and mobile optimized */}
             <div
               className="reveal flex justify-center"
               style={{ transitionDelay: "0.6s" }}
             >
               <button
-                className="bg-red-500 text-white px-8 py-3 md:px-12 md:py-4 font-body transition-all duration-300 magnetic text-base md:text-lg tracking-wide w-full md:w-auto max-w-xs md:max-w-none"
+                className="bg-red-500 text-white px-8 py-4 md:px-12 md:py-4 font-body transition-all duration-300 magnetic text-base md:text-lg tracking-wide w-full md:w-auto max-w-xs md:max-w-none rounded-lg md:rounded-none"
                 style={{
                   backgroundColor: "#ef4444",
+                  minHeight: "48px",
+                  fontSize: "16px",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#991b1b";
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#991b1b";
+                  }
                 }}
                 onMouseLeave={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#ef4444";
+                  }
+                }}
+                onTouchStart={(e) => {
+                  e.currentTarget.style.backgroundColor = "#991b1b";
+                }}
+                onTouchEnd={(e) => {
                   e.currentTarget.style.backgroundColor = "#ef4444";
                 }}
               >
@@ -827,7 +941,7 @@ export default function Home() {
             >
               Our Services
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto">
               {/* Land Surveying */}
               <div
                 className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
@@ -959,7 +1073,7 @@ export default function Home() {
             <p
               className="font-body text-gray-700 max-w-4xl mb-16 reveal"
               style={{
-                fontSize: "22px",
+                fontSize: "clamp(18px, 4vw, 22px)",
                 lineHeight: "1.5",
                 transitionDelay: "0.2s",
               }}
@@ -970,14 +1084,26 @@ export default function Home() {
             </p>
             <div className="reveal" style={{ transitionDelay: "0.4s" }}>
               <button
-                className="bg-red-500 text-white px-16 py-5 font-body transition-all duration-300 magnetic text-xl tracking-wide rounded-full"
+                className="bg-red-500 text-white px-12 py-5 md:px-16 md:py-5 font-body transition-all duration-300 magnetic text-lg md:text-xl tracking-wide rounded-full w-full md:w-auto max-w-sm md:max-w-none"
                 style={{
                   backgroundColor: "#ef4444",
+                  minHeight: "48px",
+                  fontSize: "16px",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#991b1b";
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#991b1b";
+                  }
                 }}
                 onMouseLeave={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#ef4444";
+                  }
+                }}
+                onTouchStart={(e) => {
+                  e.currentTarget.style.backgroundColor = "#991b1b";
+                }}
+                onTouchEnd={(e) => {
                   e.currentTarget.style.backgroundColor = "#ef4444";
                 }}
               >
