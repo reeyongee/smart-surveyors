@@ -24,17 +24,17 @@
 
   /* Earth Sand Shades */
   --color-sand-50: #faf9f7;
-  --color-sand-100: #f5f3ef;
-  --color-sand-200: #e8e4de;
-  --color-sand-300: #ddd7ce;
-  --color-sand-400: #e0c097;
-  --color-sand-500: #d4b380;
-  --color-sand-600: #c8a569;
-  --color-sand-700: #b59652;
-  --color-sand-800: #9c8245;
-  --color-sand-900: #836d38;
+  --color-sand-100: #f5f2ed;
+  --color-sand-200: #ede6d8;
+  --color-sand-300: #e3d7c4;
+  --color-sand-400: #d8c5a8;
+  --color-sand-500: #e0c097;
+  --color-sand-600: #c9a982;
+  --color-sand-700: #b5956e;
+  --color-sand-800: #9c7f5a;
+  --color-sand-900: #866b4a;
 
-  /* Gray Shades */
+  /* Black/Gray Shades */
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
   --color-gray-200: #e5e7eb;
@@ -45,71 +45,61 @@
   --color-gray-700: #374151;
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
-
-  /* Mobile viewport height - for Safari bottom bar handling */
-  --mobile-vh: 1vh;
-  --safe-area-inset-bottom: 0px;
 }
 
-/* Enhanced mobile viewport height calculation for Safari */
-@supports (-webkit-touch-callout: none) {
-  :root {
-    --mobile-vh: calc(1vh - 0.1px); /* Slight adjustment for Safari */
-  }
+/* Custom theme configuration */
+@theme {
+  --font-heading: "Playfair Display", serif;
+  --font-body: "Inter", sans-serif;
+  --font-work: "Playfair Display", serif;
+  --font-manrope: "Inter", sans-serif;
 }
 
-/* Reset and base styles */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  font-size: 16px;
-  scroll-behavior: smooth;
-  /* Better text rendering on mobile */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
+/* Base styles */
 body {
   overflow: hidden;
   margin: 0;
   padding: 0;
   background-color: var(--color-white);
   color: var(--color-black);
-  /* Enhanced mobile viewport fix for Safari bottom bar */
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-  min-height: calc(var(--mobile-vh, 1vh) * 100);
-  overflow-x: hidden; /* Prevent horizontal scroll */
-  -webkit-text-size-adjust: 100%; /* Prevent text scaling on iOS */
-  -ms-text-size-adjust: 100%;
-  /* Handle safe areas for notched devices */
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Prevent horizontal overflow on all elements */
-* {
-  max-width: 100%;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+/* Mobile viewport fixes */
+@media (max-width: 767px) {
+  html,
+  body {
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  .section {
+    padding-top: 0;
+    width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .section .container {
+    padding-top: 80px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Ensure all content stays within viewport */
+  .section * {
+    max-width: 100%;
+    word-wrap: break-word;
+  }
 }
 
-/* Images responsive by default */
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* Enhanced mobile section handling with Safari bottom bar fix */
 .section {
   height: 100vh;
-  height: -webkit-fill-available; /* iOS Safari fallback */
-  height: calc(var(--mobile-vh, 1vh) * 100); /* Dynamic mobile height */
   width: 100vw;
   position: fixed;
   top: 0;
@@ -118,49 +108,6 @@ img {
   transition: opacity 0.6s ease, transform 0.6s ease;
   overflow: hidden;
   transform: scale(0.95);
-  /* Prevent horizontal overflow */
-  max-width: 100vw;
-  box-sizing: border-box;
-  /* Handle safe areas */
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* Mobile-first responsive adjustments with Safari fixes */
-@media (max-width: 767px) {
-  .section {
-    padding-top: 0; /* Remove padding to let grid extend to top */
-    /* Better mobile viewport handling with Safari bottom bar compensation */
-    height: 100vh;
-    height: -webkit-fill-available;
-    height: calc(var(--mobile-vh, 1vh) * 100);
-    /* Add bottom padding to prevent content clipping by Safari bottom bar */
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-  }
-
-  .section .container {
-    padding-top: 80px; /* Move padding to container instead */
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-bottom: max(
-      40px,
-      env(safe-area-inset-bottom)
-    ); /* Extra bottom padding */
-    /* Ensure container doesn't overflow */
-    max-width: 100%;
-    overflow-x: hidden;
-    /* Prevent content from being clipped by Safari bottom bar */
-    min-height: calc(100vh - 120px);
-    min-height: calc(var(--mobile-vh, 1vh) * 100 - 120px);
-  }
-
-  /* Mobile-specific content adjustments */
-  .content-overlay {
-    padding: 0 16px;
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
 }
 
 .section.active {
@@ -169,33 +116,45 @@ img {
   transform: scale(1);
 }
 
-/* Progress bar - HIDE ON MOBILE, show only on desktop */
 .progress-bar {
   position: fixed;
   top: 50%;
-  right: 30px;
+  right: 15px;
   z-index: 100;
   transform: translateY(-144px);
-  /* Hide on mobile completely */
-  display: none;
 }
 
-/* Show progress bar only on desktop */
+/* Hide progress dots on mobile */
+@media (max-width: 767px) {
+  .progress-bar {
+    display: none;
+  }
+}
+
 @media (min-width: 768px) {
   .progress-bar {
+    right: 30px;
     display: block;
   }
 }
 
 .progress-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border: 2px solid var(--color-red);
   border-radius: 50%;
-  margin: 30px 0;
+  margin: 20px 0;
   cursor: pointer;
   transition: all 0.4s ease;
   background: transparent;
+}
+
+@media (min-width: 768px) {
+  .progress-dot {
+    width: 12px;
+    height: 12px;
+    margin: 30px 0;
+  }
 }
 
 .progress-dot.active {
@@ -209,10 +168,9 @@ img {
   box-shadow: 0 0 15px rgba(219, 34, 37, 0.3);
 }
 
-/* Mobile-first reveal animations */
 .reveal {
   opacity: 0;
-  transform: translateY(30px); /* Reduced for mobile */
+  transform: translateY(50px);
   transition: opacity 0.6s ease, transform 0.6s ease;
 }
 
@@ -237,7 +195,7 @@ img {
   letter-spacing: -0.02em;
 }
 
-/* Interactive card hover effects - mobile optimized */
+/* Interactive card hover effects */
 .interactive-card {
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -245,120 +203,66 @@ img {
   background-color: var(--color-off-white);
   transform: translateY(0) scale(1);
   will-change: transform, background-color, border-color, box-shadow;
-  /* Touch-friendly minimum size */
-  min-height: 44px;
-  padding: 16px;
-}
-
-/* Mobile-specific services grid optimization */
-@media (max-width: 767px) {
-  /* Services section mobile optimization */
-  .services-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 0 16px;
-    /* Prevent overflow */
-    overflow-x: hidden;
-    box-sizing: border-box;
-  }
-
-  /* Services section container mobile fix */
-  .services-section-container {
-    height: 100vh;
-    height: calc(var(--mobile-vh, 1vh) * 100);
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 80px 0 max(40px, env(safe-area-inset-bottom));
-    /* Scroll with momentum on iOS */
-    -webkit-overflow-scrolling: touch;
-    /* Hide scrollbar but keep functionality */
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .services-section-container::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Mobile service cards optimization */
-  .service-card-mobile {
-    padding: 16px;
-    margin-bottom: 12px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid var(--color-red-200);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(10px);
-    /* Prevent overflow */
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    overflow: hidden;
-  }
-
-  /* Mobile service card content */
-  .service-card-mobile h3 {
-    font-size: 18px !important;
-    line-height: 1.3 !important;
-    margin-bottom: 8px !important;
-  }
-
-  .service-card-mobile p {
-    font-size: 14px !important;
-    line-height: 1.4 !important;
-    color: var(--color-gray-700);
-  }
-
-  .service-card-mobile .service-icon {
-    font-size: 28px !important;
-    margin-bottom: 12px !important;
-    display: block;
-  }
-}
-
-/* Desktop services grid - keep existing layout */
-@media (min-width: 768px) {
-  .services-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-    max-width: 1280px;
-    margin: 0 auto;
-  }
-
-  .services-section-container {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 0 32px;
-  }
 }
 
 .interactive-card:hover {
-  transform: translateY(-4px) scale(1.02);
-  background-color: var(--color-white);
-  border-color: var(--color-red-300);
-  box-shadow: 0 8px 25px rgba(219, 34, 37, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1);
+  transform: translateY(-8px) scale(1.02);
+  background: var(--color-sand-50);
+  border-color: var(--color-red);
+  box-shadow: 0 12px 32px rgba(219, 34, 37, 0.15),
+    0 4px 16px rgba(219, 34, 37, 0.1);
 }
 
-.interactive-card:active {
-  transform: translateY(-2px) scale(1.01);
-}
-
-/* Mobile touch optimization for cards */
+/* Mobile touch improvements */
 @media (max-width: 767px) {
-  .interactive-card:hover {
-    transform: none; /* Disable hover effects on mobile */
+  .interactive-card {
+    transition: all 0.1s ease;
   }
 
   .interactive-card:active {
-    transform: scale(0.98);
-    background-color: var(--color-gray-50);
+    transform: translateY(-4px) scale(1.01);
+    background: var(--color-sand-50);
+    border-color: var(--color-red);
+    box-shadow: 0 8px 24px rgba(219, 34, 37, 0.12);
+  }
+}
+
+.floating {
+  animation: floating 3s ease-in-out infinite;
+}
+
+@keyframes floating {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.pulse-btn {
+  animation: pulse 2s infinite;
+  position: relative;
+  overflow: hidden;
+  border-color: var(--color-red);
+  color: var(--color-red);
+}
+
+.pulse-btn:hover {
+  background-color: var(--color-red);
+  color: var(--color-white);
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(219, 34, 37, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(219, 34, 37, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(219, 34, 37, 0);
   }
 }
 
@@ -366,7 +270,6 @@ img {
   transition: transform 0.3s ease;
 }
 
-/* Mobile-first particles container */
 #particles-js {
   position: absolute;
   width: 100%;
@@ -386,38 +289,24 @@ img {
       transparent 50%
     ),
     radial-gradient(circle at 40% 60%, rgba(0, 0, 0, 0.02) 0%, transparent 50%);
-  /* Prevent overflow on mobile */
-  overflow: hidden;
 }
 
-/* Mobile-optimized content overlay */
 .content-overlay {
   position: relative;
   z-index: 2;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
 }
 
-/* Survey-specific styles - mobile optimized */
+/* Survey-specific styles */
 .survey-measurement {
   white-space: nowrap;
   user-select: none;
   letter-spacing: 0.5px;
   border: 1px solid var(--color-sand-300);
   background: rgba(248, 248, 248, 0.9);
-  padding: 4px 8px; /* Larger padding for mobile */
-  border-radius: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
   backdrop-filter: blur(2px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  font-size: 10px; /* Smaller font for mobile */
-}
-
-@media (min-width: 768px) {
-  .survey-measurement {
-    padding: 2px 6px;
-    font-size: 12px;
-  }
 }
 
 @keyframes surveyFade {
@@ -437,88 +326,86 @@ img {
   }
 }
 
-/* Enhanced particle container with survey grid overlay - mobile optimized */
+/* Enhanced particle container with survey grid overlay */
 #particles-js::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: linear-gradient(
-      90deg,
-      rgba(219, 34, 37, 0.03) 1px,
-      transparent 1px
-    ),
-    linear-gradient(rgba(219, 34, 37, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px; /* Larger grid on mobile */
-  opacity: 0.6;
-  z-index: 0;
-  pointer-events: none;
-}
-
-@media (min-width: 768px) {
-  #particles-js::before {
-    background-size: 30px 30px; /* Smaller grid on desktop */
-  }
-}
-
-/* Floating animation */
-@keyframes floating {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.floating {
-  animation: floating 6s ease-in-out infinite;
-}
-
-/* Typewriter cursor */
-.typewriter-cursor {
-  display: inline-block;
-  background-color: var(--color-red);
-  margin-left: 0.1rem;
-  width: 3px;
-  animation: typewriterCursor 1.5s infinite;
-}
-
-@keyframes typewriterCursor {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-/* Image Grid Styles - Mobile optimized */
-.image-grid {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background-image: linear-gradient(var(--color-sand-300) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-sand-300) 1px, transparent 1px);
+  background-size: 50px 50px;
+  opacity: 0.4;
   pointer-events: none;
   z-index: 1;
-  /* Hide on mobile to prevent performance issues */
-  display: none;
 }
 
-/* Show image grid only on desktop */
+/* Survey corner markers */
+#particles-js::after {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 10px;
+  height: 10px;
+  background: var(--color-red);
+  border: 2px solid var(--color-white);
+  border-radius: 50%;
+  box-shadow: calc(100vw - 60px) 0 0 var(--color-red),
+    0 calc(100vh - 60px) 0 var(--color-red),
+    calc(100vw - 60px) calc(100vh - 60px) 0 var(--color-red);
+  animation: surveyPulse 3s ease-in-out infinite;
+  z-index: 3;
+}
+
+@keyframes surveyPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
+/* Font family utilities */
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-work {
+  font-family: var(--font-work);
+}
+
+.font-manrope {
+  font-family: var(--font-body);
+}
+
+/* Image Grid Background Styles */
+.image-grid {
+  pointer-events: none;
+  position: absolute;
+  width: 110%;
+  height: 110%;
+  top: -5%;
+  left: -5%;
+  z-index: 1;
+}
+
+/* Desktop Image Grid */
 @media (min-width: 768px) {
   .image-grid {
     display: grid;
     grid-template-columns: repeat(50, 2%);
     grid-template-rows: repeat(50, 2%);
-    width: 110%;
-    height: 110%;
-    top: -5%;
-    left: -5%;
   }
 
   .image-grid__item {
@@ -552,37 +439,111 @@ img {
   /* Desktop positioning - complex artistic layout */
   .pos-1 {
     grid-area: 12 / 5 / 25 / 10;
-  }
+  } /* moved from 10/1/26/7 */
   .pos-2 {
     grid-area: 3 / 19 / 8 / 26;
-  }
+  } /* moved from 1/18/9/27 */
   .pos-3 {
     grid-area: 3 / 34 / 13 / 40;
-  }
+  } /* moved from 1/36/14/42 */
   .pos-4 {
     grid-area: 25 / 4 / 40 / 9;
-  }
+  } /* moved slightly right and down from left edge */
   .pos-5 {
     grid-area: 3 / 44 / 15 / 50;
-  }
+  } /* moved to top right corner */
   .pos-6 {
     grid-area: 21 / 42 / 27 / 46;
-  }
+  } /* moved from 20/46/28/51 */
   .pos-7 {
     grid-area: 41 / 5 / 47 / 12;
-  }
+  } /* moved from 43/1/51/10 */
   .pos-8 {
     grid-area: 37 / 16 / 44 / 22;
-  }
+  } /* moved from 38/14/46/22 */
   .pos-9 {
     grid-area: 39 / 26 / 48 / 31;
-  }
+  } /* moved from 40/26/51/32 */
   .pos-10 {
     grid-area: 36 / 37 / 45 / 44;
+  } /* moved from 37/39/48/47 */
+}
+
+/* Mobile Image Grid - Artistic Random Layout */
+@media (max-width: 767px) {
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 4px;
+    padding: 8px;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+  }
+
+  .image-grid__item {
+    position: relative;
+    opacity: 0.7;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .image-grid--img .image-grid__item {
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .image-grid__item-img {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: 50% 50%;
+  }
+
+  .image-grid--img .image-grid__item-img {
+    flex: none;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Mobile positioning - squares only, well distributed */
+  .pos-1 {
+    grid-area: 2 / 1 / 4 / 3; /* 2x2 square - left side, not at very top */
+  }
+  .pos-2 {
+    grid-area: 1 / 4 / 2 / 5; /* 1x1 square - top center */
+  }
+  .pos-3 {
+    grid-area: 1 / 7 / 3 / 9; /* 2x2 square - top right */
+  }
+  .pos-4 {
+    grid-area: 4 / 2 / 5 / 3; /* 1x1 square - left middle */
+  }
+  .pos-5 {
+    grid-area: 3 / 5 / 5 / 7; /* 2x2 square - center */
+  }
+  .pos-6 {
+    grid-area: 5 / 8 / 6 / 9; /* 1x1 square - right side */
+  }
+  .pos-7 {
+    grid-area: 6 / 1 / 7 / 2; /* 1x1 square - bottom left */
+  }
+  .pos-8 {
+    grid-area: 7 / 3 / 9 / 5; /* 2x2 square - bottom center */
+  }
+  .pos-9 {
+    grid-area: 6 / 6 / 7 / 7; /* 1x1 square - bottom right area */
+  }
+  .pos-10 {
+    grid-area: 9 / 7 / 10 / 8; /* 1x1 square - very bottom right */
   }
 }
 
-/* Frame styles for larger screens */
 @media screen and (min-width: 53em) {
   .message {
     display: none;
@@ -616,53 +577,4 @@ img {
 
 .z-2 {
   z-index: 2;
-}
-
-/* Mobile-specific typography improvements */
-@media (max-width: 767px) {
-  h1,
-  .text-4xl,
-  .text-5xl,
-  .text-6xl,
-  .text-7xl {
-    font-size: clamp(2rem, 8vw, 4rem) !important;
-    line-height: 1.1 !important;
-  }
-
-  h2,
-  .text-3xl {
-    font-size: clamp(1.5rem, 6vw, 2.5rem) !important;
-    line-height: 1.2 !important;
-  }
-
-  p,
-  .text-base,
-  .text-lg,
-  .text-xl {
-    font-size: clamp(1rem, 4vw, 1.25rem) !important;
-    line-height: 1.5 !important;
-  }
-}
-
-/* Prevent zoom on form inputs on iOS */
-input,
-textarea,
-select {
-  font-size: 16px !important;
-}
-
-/* Enhanced safe area insets for devices with notches and Safari bottom bar */
-@supports (padding: max(0px)) {
-  .section {
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-  }
-
-  @media (max-width: 767px) {
-    .section {
-      /* Extra bottom padding for Safari bottom bar */
-      padding-bottom: max(40px, env(safe-area-inset-bottom));
-    }
-  }
 }
