@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function Nav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -11,9 +12,11 @@ export default function Nav() {
       <nav className="hidden md:block fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-white/10 border-white/20 border rounded-full pt-3 pr-4 pb-3 pl-4 shadow-xl backdrop-blur-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <img
+            <Image
               src="/SMART-2.svg"
               alt="Smart Surveyors"
+              width={128}
+              height={32}
               className="w-32 h-8"
             />
           </div>
@@ -84,9 +87,11 @@ export default function Nav() {
 
           {/* Centered logo */}
           <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
-            <img
+            <Image
               src="/SMART-2.svg"
               alt="Smart Surveyors"
+              width={112}
+              height={28}
               className="w-28 h-7"
             />
           </div>
