@@ -24,17 +24,17 @@
 
   /* Earth Sand Shades */
   --color-sand-50: #faf9f7;
-  --color-sand-100: #f5f2ed;
-  --color-sand-200: #ede6d8;
-  --color-sand-300: #e3d7c4;
-  --color-sand-400: #d8c5a8;
-  --color-sand-500: #e0c097;
-  --color-sand-600: #c9a982;
-  --color-sand-700: #b5956e;
-  --color-sand-800: #9c7f5a;
-  --color-sand-900: #866b4a;
+  --color-sand-100: #f5f3ef;
+  --color-sand-200: #e8e4de;
+  --color-sand-300: #ddd7ce;
+  --color-sand-400: #e0c097;
+  --color-sand-500: #d4b380;
+  --color-sand-600: #c8a569;
+  --color-sand-700: #b59652;
+  --color-sand-800: #9c8245;
+  --color-sand-900: #836d38;
 
-  /* Black/Gray Shades */
+  /* Gray Shades */
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
   --color-gray-200: #e5e7eb;
@@ -45,26 +45,33 @@
   --color-gray-700: #374151;
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
+
+  /* Mobile viewport height - for Safari bottom bar handling */
+  --mobile-vh: 1vh;
+  --safe-area-inset-bottom: 0px;
 }
 
-/* Custom theme configuration */
-@theme {
-  --font-heading: "Playfair Display", serif;
-  --font-body: "Inter", sans-serif;
-  --font-work: "Playfair Display", serif;
-  --font-manrope: "Inter", sans-serif;
+/* Enhanced mobile viewport height calculation for Safari */
+@supports (-webkit-touch-callout: none) {
+  :root {
+    --mobile-vh: calc(1vh - 0.1px); /* Slight adjustment for Safari */
+  }
 }
 
-/* Base styles - Mobile First Approach */
+/* Reset and base styles */
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
-  /* Fix for mobile viewport issues */
-  height: 100%;
-  height: -webkit-fill-available;
-  overflow-x: hidden; /* Prevent horizontal scroll */
+  font-size: 16px;
+  scroll-behavior: smooth;
+  /* Better text rendering on mobile */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -73,12 +80,15 @@ body {
   padding: 0;
   background-color: var(--color-white);
   color: var(--color-black);
-  /* Mobile viewport fix */
+  /* Enhanced mobile viewport fix for Safari bottom bar */
   min-height: 100vh;
   min-height: -webkit-fill-available;
+  min-height: calc(var(--mobile-vh, 1vh) * 100);
   overflow-x: hidden; /* Prevent horizontal scroll */
   -webkit-text-size-adjust: 100%; /* Prevent text scaling on iOS */
   -ms-text-size-adjust: 100%;
+  /* Handle safe areas for notched devices */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Prevent horizontal overflow on all elements */
@@ -95,10 +105,11 @@ img {
   display: block;
 }
 
-/* Mobile navbar spacing - improved */
+/* Enhanced mobile section handling with Safari bottom bar fix */
 .section {
   height: 100vh;
-  height: -webkit-fill-available; /* Mobile viewport fix */
+  height: -webkit-fill-available; /* iOS Safari fallback */
+  height: calc(var(--mobile-vh, 1vh) * 100); /* Dynamic mobile height */
   width: 100vw;
   position: fixed;
   top: 0;
@@ -110,29 +121,42 @@ img {
   /* Prevent horizontal overflow */
   max-width: 100vw;
   box-sizing: border-box;
+  /* Handle safe areas */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Mobile-first responsive adjustments */
+/* Mobile-first responsive adjustments with Safari fixes */
 @media (max-width: 767px) {
   .section {
     padding-top: 0; /* Remove padding to let grid extend to top */
-    /* Better mobile viewport handling */
+    /* Better mobile viewport handling with Safari bottom bar compensation */
     height: 100vh;
-    height: calc(var(--vh, 1vh) * 100); /* Dynamic vh for mobile */
+    height: -webkit-fill-available;
+    height: calc(var(--mobile-vh, 1vh) * 100);
+    /* Add bottom padding to prevent content clipping by Safari bottom bar */
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
   }
 
   .section .container {
     padding-top: 80px; /* Move padding to container instead */
     padding-left: 16px;
     padding-right: 16px;
+    padding-bottom: max(
+      40px,
+      env(safe-area-inset-bottom)
+    ); /* Extra bottom padding */
     /* Ensure container doesn't overflow */
     max-width: 100%;
     overflow-x: hidden;
+    /* Prevent content from being clipped by Safari bottom bar */
+    min-height: calc(100vh - 120px);
+    min-height: calc(var(--mobile-vh, 1vh) * 100 - 120px);
   }
 
   /* Mobile-specific content adjustments */
   .content-overlay {
     padding: 0 16px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -145,69 +169,42 @@ img {
   transform: scale(1);
 }
 
-/* Progress bar - mobile optimized */
+/* Progress bar - HIDE ON MOBILE, show only on desktop */
 .progress-bar {
   position: fixed;
   top: 50%;
-  right: 8px; /* Closer to edge on mobile */
+  right: 30px;
   z-index: 100;
   transform: translateY(-144px);
+  /* Hide on mobile completely */
+  display: none;
 }
 
+/* Show progress bar only on desktop */
 @media (min-width: 768px) {
   .progress-bar {
-    right: 30px;
+    display: block;
   }
 }
 
 .progress-dot {
-  width: 12px; /* Slightly larger for better touch */
-  height: 12px;
-  border: 2px solid var(--color-red);
-  border-radius: 50%;
-  margin: 16px 0; /* Reduced margin for mobile */
-  cursor: pointer;
-  transition: all 0.4s ease;
-  background: transparent;
-  /* Touch-friendly sizing */
-  min-width: 44px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.progress-dot::before {
-  content: "";
   width: 12px;
   height: 12px;
   border: 2px solid var(--color-red);
   border-radius: 50%;
-  background: transparent;
+  margin: 30px 0;
+  cursor: pointer;
   transition: all 0.4s ease;
+  background: transparent;
 }
 
-@media (min-width: 768px) {
-  .progress-dot {
-    width: 12px;
-    height: 12px;
-    margin: 30px 0;
-    min-width: auto;
-    min-height: auto;
-  }
-
-  .progress-dot::before {
-    display: none;
-  }
-}
-
-.progress-dot.active::before {
+.progress-dot.active {
   transform: scale(1.3);
   background-color: var(--color-red);
   box-shadow: 0 0 20px rgba(219, 34, 37, 0.5);
 }
 
-.progress-dot:hover::before {
+.progress-dot:hover {
   transform: scale(1.1);
   box-shadow: 0 0 15px rgba(219, 34, 37, 0.3);
 }
@@ -253,94 +250,115 @@ img {
   padding: 16px;
 }
 
-/* Desktop hover effects */
-@media (hover: hover) and (pointer: fine) {
-  .interactive-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    background: var(--color-sand-50);
-    border-color: var(--color-red);
-    box-shadow: 0 12px 32px rgba(219, 34, 37, 0.15),
-      0 4px 16px rgba(219, 34, 37, 0.1);
+/* Mobile-specific services grid optimization */
+@media (max-width: 767px) {
+  /* Services section mobile optimization */
+  .services-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0 16px;
+    /* Prevent overflow */
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  /* Services section container mobile fix */
+  .services-section-container {
+    height: 100vh;
+    height: calc(var(--mobile-vh, 1vh) * 100);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 80px 0 max(40px, env(safe-area-inset-bottom));
+    /* Scroll with momentum on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .services-section-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mobile service cards optimization */
+  .service-card-mobile {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid var(--color-red-200);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    /* Prevent overflow */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Mobile service card content */
+  .service-card-mobile h3 {
+    font-size: 18px !important;
+    line-height: 1.3 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .service-card-mobile p {
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    color: var(--color-gray-700);
+  }
+
+  .service-card-mobile .service-icon {
+    font-size: 28px !important;
+    margin-bottom: 12px !important;
+    display: block;
   }
 }
 
-/* Mobile touch improvements */
+/* Desktop services grid - keep existing layout */
+@media (min-width: 768px) {
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .services-section-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 32px;
+  }
+}
+
+.interactive-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  background-color: var(--color-white);
+  border-color: var(--color-red-300);
+  box-shadow: 0 8px 25px rgba(219, 34, 37, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.interactive-card:active {
+  transform: translateY(-2px) scale(1.01);
+}
+
+/* Mobile touch optimization for cards */
 @media (max-width: 767px) {
-  .interactive-card {
-    transition: all 0.1s ease;
-    padding: 12px; /* Adjusted padding for mobile */
+  .interactive-card:hover {
+    transform: none; /* Disable hover effects on mobile */
   }
 
   .interactive-card:active {
-    transform: translateY(-4px) scale(1.01);
-    background: var(--color-sand-50);
-    border-color: var(--color-red);
-    box-shadow: 0 8px 24px rgba(219, 34, 37, 0.12);
-  }
-}
-
-/* Touch-friendly button improvements */
-button,
-.btn,
-a[role="button"] {
-  min-height: 44px; /* Apple/Google recommended minimum */
-  min-width: 44px;
-  padding: 12px 24px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  touch-action: manipulation; /* Disable double-tap zoom */
-  -webkit-tap-highlight-color: transparent; /* Remove iOS tap highlight */
-  user-select: none; /* Prevent text selection */
-}
-
-/* Mobile-specific button adjustments */
-@media (max-width: 767px) {
-  button,
-  .btn,
-  a[role="button"] {
-    min-height: 48px; /* Slightly larger for mobile */
-    padding: 16px 32px;
-    font-size: 16px; /* Prevent zoom on iOS */
-  }
-}
-
-.floating {
-  animation: floating 3s ease-in-out infinite;
-}
-
-@keyframes floating {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-}
-
-.pulse-btn {
-  animation: pulse 2s infinite;
-  position: relative;
-  overflow: hidden;
-  border-color: var(--color-red);
-  color: var(--color-red);
-}
-
-.pulse-btn:hover {
-  background-color: var(--color-red);
-  color: var(--color-white);
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(219, 34, 37, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(219, 34, 37, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(219, 34, 37, 0);
+    transform: scale(0.98);
+    background-color: var(--color-gray-50);
   }
 }
 
@@ -423,170 +441,75 @@ a[role="button"] {
 #particles-js::before {
   content: "";
   position: absolute;
-  top: -10px;
-  left: -10px;
-  right: -10px;
-  bottom: -10px;
-  background-image: linear-gradient(var(--color-sand-300) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-sand-300) 1px, transparent 1px);
-  background-size: 30px 30px; /* Smaller grid for mobile */
-  opacity: 0.3; /* Reduced opacity for mobile */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(
+      90deg,
+      rgba(219, 34, 37, 0.03) 1px,
+      transparent 1px
+    ),
+    linear-gradient(rgba(219, 34, 37, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px; /* Larger grid on mobile */
+  opacity: 0.6;
+  z-index: 0;
   pointer-events: none;
-  z-index: 1;
 }
 
 @media (min-width: 768px) {
   #particles-js::before {
-    background-size: 50px 50px;
-    opacity: 0.4;
+    background-size: 30px 30px; /* Smaller grid on desktop */
   }
 }
 
-/* Survey corner markers - mobile optimized */
-#particles-js::after {
-  content: "";
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 8px; /* Smaller for mobile */
-  height: 8px;
-  background: var(--color-red);
-  border: 2px solid var(--color-white);
-  border-radius: 50%;
-  box-shadow: calc(100vw - 50px) 0 0 var(--color-red),
-    0 calc(100vh - 50px) 0 var(--color-red),
-    calc(100vw - 50px) calc(100vh - 50px) 0 var(--color-red);
-  animation: surveyPulse 3s ease-in-out infinite;
-  z-index: 3;
-}
-
-@media (min-width: 768px) {
-  #particles-js::after {
-    width: 10px;
-    height: 10px;
-    box-shadow: calc(100vw - 60px) 0 0 var(--color-red),
-      0 calc(100vh - 60px) 0 var(--color-red),
-      calc(100vw - 60px) calc(100vh - 60px) 0 var(--color-red);
-  }
-}
-
-@keyframes surveyPulse {
+/* Floating animation */
+@keyframes floating {
   0%,
   100% {
-    transform: scale(1);
-    opacity: 0.8;
+    transform: translateY(0px);
   }
   50% {
-    transform: scale(1.3);
-    opacity: 1;
+    transform: translateY(-10px);
   }
 }
 
-/* Font family utilities */
-.font-heading {
-  font-family: var(--font-heading);
+.floating {
+  animation: floating 6s ease-in-out infinite;
 }
 
-.font-body {
-  font-family: var(--font-body);
+/* Typewriter cursor */
+.typewriter-cursor {
+  display: inline-block;
+  background-color: var(--color-red);
+  margin-left: 0.1rem;
+  width: 3px;
+  animation: typewriterCursor 1.5s infinite;
 }
 
-.font-work {
-  font-family: var(--font-work);
+@keyframes typewriterCursor {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
-.font-manrope {
-  font-family: var(--font-body);
-}
-
-/* Image Grid Background Styles - Mobile First */
+/* Image Grid Styles - Mobile optimized */
 .image-grid {
-  pointer-events: none;
   position: absolute;
   width: 100%;
   height: 100%;
   top: 0;
   left: 0;
+  pointer-events: none;
   z-index: 1;
-  overflow: hidden; /* Prevent overflow on mobile */
+  /* Hide on mobile to prevent performance issues */
+  display: none;
 }
 
-/* Mobile Image Grid - Simplified and Optimized */
-@media (max-width: 767px) {
-  .image-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr); /* Simplified grid */
-    grid-template-rows: repeat(8, 1fr);
-    gap: 2px;
-    padding: 4px;
-    width: 100%;
-    height: 100%;
-  }
-
-  .image-grid__item {
-    position: relative;
-    opacity: 0.6; /* Reduced opacity for mobile */
-    border-radius: 4px;
-    overflow: hidden;
-    min-height: 0; /* Prevent overflow */
-  }
-
-  .image-grid--img .image-grid__item {
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .image-grid__item-img {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: 50% 50%;
-    background-repeat: no-repeat;
-  }
-
-  .image-grid--img .image-grid__item-img {
-    flex: none;
-    width: 100%;
-    height: 100%;
-  }
-
-  /* Mobile positioning - simplified and optimized */
-  .pos-1 {
-    grid-area: 2 / 1 / 4 / 3; /* 2x2 square */
-  }
-  .pos-2 {
-    grid-area: 1 / 3 / 2 / 4; /* 1x1 square */
-  }
-  .pos-3 {
-    grid-area: 1 / 5 / 3 / 7; /* 2x2 square */
-  }
-  .pos-4 {
-    grid-area: 4 / 1 / 5 / 2; /* 1x1 square */
-  }
-  .pos-5 {
-    grid-area: 3 / 3 / 5 / 5; /* 2x2 square */
-  }
-  .pos-6 {
-    grid-area: 5 / 6 / 6 / 7; /* 1x1 square */
-  }
-  .pos-7 {
-    grid-area: 6 / 1 / 7 / 2; /* 1x1 square */
-  }
-  .pos-8 {
-    grid-area: 6 / 3 / 8 / 5; /* 2x2 square */
-  }
-  .pos-9 {
-    grid-area: 5 / 5 / 6 / 6; /* 1x1 square */
-  }
-  .pos-10 {
-    grid-area: 7 / 6 / 8 / 7; /* 1x1 square */
-  }
-}
-
-/* Desktop Image Grid */
+/* Show image grid only on desktop */
 @media (min-width: 768px) {
   .image-grid {
     display: grid;
@@ -728,10 +651,18 @@ select {
   font-size: 16px !important;
 }
 
-/* Safe area insets for devices with notches */
+/* Enhanced safe area insets for devices with notches and Safari bottom bar */
 @supports (padding: max(0px)) {
   .section {
     padding-left: max(16px, env(safe-area-inset-left));
     padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  @media (max-width: 767px) {
+    .section {
+      /* Extra bottom padding for Safari bottom bar */
+      padding-bottom: max(40px, env(safe-area-inset-bottom));
+    }
   }
 }

@@ -13,10 +13,22 @@ declare global {
   }
 }
 
-// Mobile viewport height fix
+// Enhanced mobile viewport height fix for Safari bottom bar
 function setViewportHeight() {
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty("--vh", `${vh}px`);
+  document.documentElement.style.setProperty("--mobile-vh", `${vh}px`);
+
+  // Additional Safari-specific handling
+  if (
+    /Safari/.test(navigator.userAgent) &&
+    /iPhone|iPad/.test(navigator.userAgent)
+  ) {
+    const actualVh = window.visualViewport
+      ? window.visualViewport.height * 0.01
+      : vh;
+    document.documentElement.style.setProperty("--mobile-vh", `${actualVh}px`);
+  }
 }
 
 // Stats Counter Component
@@ -105,7 +117,7 @@ export default function Home() {
   const touchStartTimeRef = useRef(touchStartTime);
   const isTouchDraggingRef = useRef(isTouchDragging);
 
-  // Mobile detection and viewport setup
+  // Enhanced mobile detection and viewport setup
   useEffect(() => {
     // Mobile detection
     const checkMobile = () => {
@@ -118,28 +130,55 @@ export default function Home() {
       setIsMobile(isMobileDevice);
     };
 
-    // Set initial viewport height
+    // Set initial viewport height with Safari handling
     setViewportHeight();
     checkMobile();
 
-    // Update on resize and orientation change
+    // Update on resize and orientation change with debouncing
+    let resizeTimeout: NodeJS.Timeout;
     const handleResize = () => {
-      setViewportHeight();
-      checkMobile();
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        setViewportHeight();
+        checkMobile();
+      }, 100);
     };
 
     const handleOrientationChange = () => {
-      setTimeout(() => {
+      // Multiple viewport updates for Safari orientation change
+      setTimeout(() => setViewportHeight(), 100);
+      setTimeout(() => setViewportHeight(), 300);
+      setTimeout(() => setViewportHeight(), 500);
+    };
+
+    // Enhanced viewport change handling for mobile browsers
+    const handleVisualViewportChange = () => {
+      if (window.visualViewport) {
         setViewportHeight();
-      }, 100);
+      }
     };
 
     window.addEventListener("resize", handleResize);
     window.addEventListener("orientationchange", handleOrientationChange);
 
+    // Listen for visual viewport changes (Safari mobile)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        "resize",
+        handleVisualViewportChange
+      );
+    }
+
     return () => {
+      clearTimeout(resizeTimeout);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleOrientationChange);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener(
+          "resize",
+          handleVisualViewportChange
+        );
+      }
     };
   }, []);
 
@@ -317,8 +356,8 @@ export default function Home() {
       addSurveyMeasurements();
     }
 
-    // Initialize interactive grid
-    if (typeof window !== "undefined") {
+    // Initialize interactive grid only on desktop
+    if (typeof window !== "undefined" && !isMobile) {
       const gridElement = document.getElementById("interactive-grid");
       if (gridElement && !gridElement.dataset.initialized) {
         import("../components/ui/grid").then(({ default: Grid }) => {
@@ -656,7 +695,7 @@ export default function Home() {
       <div className="bg-white text-black font-body">
         <Nav />
 
-        {/* Progress Indicator - Enhanced for mobile */}
+        {/* Progress Indicator - Hidden on mobile, visible on desktop only */}
         <div className="progress-bar">
           <div
             className="progress-dot"
@@ -766,69 +805,71 @@ export default function Home() {
         </section>
 
         <section className="section bg-sand-100" data-index="1">
-          {/* Interactive Grid Background */}
-          <div className="image-grid image-grid--img" id="interactive-grid">
-            <div className="image-grid__item pos-1">
-              <div
-                className="image-grid__item-img"
-                style={{ backgroundImage: "url('/images/survey-1.jpg')" }}
-              ></div>
+          {/* Interactive Grid Background - Desktop only */}
+          {!isMobile && (
+            <div className="image-grid image-grid--img" id="interactive-grid">
+              <div className="image-grid__item pos-1">
+                <div
+                  className="image-grid__item-img"
+                  style={{ backgroundImage: "url('/images/survey-1.jpg')" }}
+                ></div>
+              </div>
+              <div className="image-grid__item pos-2">
+                <div
+                  className="image-grid__item-img"
+                  style={{ backgroundImage: "url('/images/survey-2.jpg')" }}
+                ></div>
+              </div>
+              <div className="image-grid__item pos-3">
+                <div
+                  className="image-grid__item-img"
+                  style={{ backgroundImage: "url('/images/survey-3.jpg')" }}
+                ></div>
+              </div>
+              <div className="image-grid__item pos-4">
+                <div
+                  className="image-grid__item-img"
+                  style={{ backgroundImage: "url('/images/survey-4.jpg')" }}
+                ></div>
+              </div>
+              <div className="image-grid__item pos-5">
+                <div
+                  className="image-grid__item-img"
+                  style={{ backgroundImage: "url('/images/survey-5.jpg')" }}
+                ></div>
+              </div>
+              <div className="image-grid__item pos-6">
+                <div
+                  className="image-grid__item-img"
+                  style={{ backgroundImage: "url('/images/survey-6.jpg')" }}
+                ></div>
+              </div>
+              <div className="image-grid__item pos-7">
+                <div
+                  className="image-grid__item-img"
+                  style={{ backgroundImage: "url('/images/survey-7.jpg')" }}
+                ></div>
+              </div>
+              <div className="image-grid__item pos-8">
+                <div
+                  className="image-grid__item-img"
+                  style={{ backgroundImage: "url('/images/survey-8.jpg')" }}
+                ></div>
+              </div>
+              <div className="image-grid__item pos-9">
+                <div
+                  className="image-grid__item-img"
+                  style={{ backgroundImage: "url('/images/survey-9.jpg')" }}
+                ></div>
+              </div>
+              <div className="image-grid__item pos-10">
+                <div
+                  className="image-grid__item-img"
+                  style={{ backgroundImage: "url('/images/survey-10.jpg')" }}
+                ></div>
+              </div>
             </div>
-            <div className="image-grid__item pos-2">
-              <div
-                className="image-grid__item-img"
-                style={{ backgroundImage: "url('/images/survey-2.jpg')" }}
-              ></div>
-            </div>
-            <div className="image-grid__item pos-3">
-              <div
-                className="image-grid__item-img"
-                style={{ backgroundImage: "url('/images/survey-3.jpg')" }}
-              ></div>
-            </div>
-            <div className="image-grid__item pos-4">
-              <div
-                className="image-grid__item-img"
-                style={{ backgroundImage: "url('/images/survey-4.jpg')" }}
-              ></div>
-            </div>
-            <div className="image-grid__item pos-5">
-              <div
-                className="image-grid__item-img"
-                style={{ backgroundImage: "url('/images/survey-5.jpg')" }}
-              ></div>
-            </div>
-            <div className="image-grid__item pos-6">
-              <div
-                className="image-grid__item-img"
-                style={{ backgroundImage: "url('/images/survey-6.jpg')" }}
-              ></div>
-            </div>
-            <div className="image-grid__item pos-7">
-              <div
-                className="image-grid__item-img"
-                style={{ backgroundImage: "url('/images/survey-7.jpg')" }}
-              ></div>
-            </div>
-            <div className="image-grid__item pos-8">
-              <div
-                className="image-grid__item-img"
-                style={{ backgroundImage: "url('/images/survey-8.jpg')" }}
-              ></div>
-            </div>
-            <div className="image-grid__item pos-9">
-              <div
-                className="image-grid__item-img"
-                style={{ backgroundImage: "url('/images/survey-9.jpg')" }}
-              ></div>
-            </div>
-            <div className="image-grid__item pos-10">
-              <div
-                className="image-grid__item-img"
-                style={{ backgroundImage: "url('/images/survey-10.jpg')" }}
-              ></div>
-            </div>
-          </div>
+          )}
           {/* Light overlay for better contrast - similar to hero section */}
           <div
             style={{
@@ -899,12 +940,9 @@ export default function Home() {
             </div>
 
             {/* Explore Projects Button - Centered and mobile optimized */}
-            <div
-              className="reveal flex justify-center"
-              style={{ transitionDelay: "0.6s" }}
-            >
+            <div className="reveal" style={{ transitionDelay: "0.6s" }}>
               <button
-                className="bg-red-500 text-white px-8 py-4 md:px-12 md:py-4 font-body transition-all duration-300 magnetic text-base md:text-lg tracking-wide w-full md:w-auto max-w-xs md:max-w-none rounded-lg md:rounded-none"
+                className="bg-red-500 text-white px-8 py-4 md:px-12 md:py-4 font-body transition-all duration-300 magnetic text-base md:text-lg tracking-wide rounded-lg w-full md:w-auto max-w-sm md:max-w-none"
                 style={{
                   backgroundColor: "#ef4444",
                   minHeight: "48px",
@@ -926,28 +964,72 @@ export default function Home() {
                 onTouchEnd={(e) => {
                   e.currentTarget.style.backgroundColor = "#ef4444";
                 }}
+                onClick={() => {
+                  if (isScrollingRef.current) return;
+
+                  const currentIdx = currentIndexRef.current;
+                  if (2 !== currentIdx) {
+                    if (scrollTimeoutRef.current) {
+                      clearTimeout(scrollTimeoutRef.current);
+                    }
+
+                    setIsScrolling(true);
+                    setCurrentIndex(2);
+                    changeSection(2);
+
+                    scrollTimeoutRef.current = setTimeout(() => {
+                      setIsScrolling(false);
+                      scrollTimeoutRef.current = null;
+                    }, 800);
+                  }
+                }}
               >
-                Explore Our Projects
+                Explore Our Services
               </button>
             </div>
           </div>
         </section>
 
+        {/* Enhanced Services Section with Mobile Optimization */}
         <section className="section bg-red-100" data-index="2">
-          <div className="container mx-auto h-full flex flex-col justify-center px-4 md:px-8 pt-16 md:pt-24">
+          <div
+            className={
+              isMobile
+                ? "services-section-container"
+                : "container mx-auto h-full flex flex-col justify-center px-4 md:px-8 pt-16 md:pt-24"
+            }
+          >
             <h2
               className="font-heading font-semibold heading-tight mb-8 md:mb-16 text-center reveal text-black"
               style={{ fontSize: "clamp(48px, 6vw, 72px)", lineHeight: "0.9" }}
             >
               Our Services
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto">
+            <div
+              className={
+                isMobile
+                  ? "services-grid"
+                  : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto"
+              }
+            >
               {/* Land Surveying */}
               <div
-                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                className={
+                  isMobile
+                    ? "service-card-mobile reveal"
+                    : "p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                }
                 style={{ transitionDelay: "0.025s" }}
               >
-                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🗺️</div>
+                <div
+                  className={
+                    isMobile
+                      ? "service-icon"
+                      : "text-3xl md:text-4xl mb-3 md:mb-4"
+                  }
+                >
+                  🗺️
+                </div>
                 <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
                   Land Surveying
                 </h3>
@@ -959,10 +1041,22 @@ export default function Home() {
 
               {/* Building Set Out */}
               <div
-                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                className={
+                  isMobile
+                    ? "service-card-mobile reveal"
+                    : "p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                }
                 style={{ transitionDelay: "0.05s" }}
               >
-                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🏗️</div>
+                <div
+                  className={
+                    isMobile
+                      ? "service-icon"
+                      : "text-3xl md:text-4xl mb-3 md:mb-4"
+                  }
+                >
+                  🏗️
+                </div>
                 <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
                   Building Set Out
                 </h3>
@@ -974,10 +1068,22 @@ export default function Home() {
 
               {/* L&C Sections */}
               <div
-                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                className={
+                  isMobile
+                    ? "service-card-mobile reveal"
+                    : "p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                }
                 style={{ transitionDelay: "0.075s" }}
               >
-                <div className="text-3xl md:text-4xl mb-3 md:mb-4">📏</div>
+                <div
+                  className={
+                    isMobile
+                      ? "service-icon"
+                      : "text-3xl md:text-4xl mb-3 md:mb-4"
+                  }
+                >
+                  📏
+                </div>
                 <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
                   L&C Sections
                 </h3>
@@ -989,10 +1095,22 @@ export default function Home() {
 
               {/* AutoCAD Drafting */}
               <div
-                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                className={
+                  isMobile
+                    ? "service-card-mobile reveal"
+                    : "p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                }
                 style={{ transitionDelay: "0.1s" }}
               >
-                <div className="text-3xl md:text-4xl mb-3 md:mb-4">📐</div>
+                <div
+                  className={
+                    isMobile
+                      ? "service-icon"
+                      : "text-3xl md:text-4xl mb-3 md:mb-4"
+                  }
+                >
+                  📐
+                </div>
                 <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
                   AutoCAD Drafting
                 </h3>
@@ -1003,10 +1121,22 @@ export default function Home() {
 
               {/* Level Transferring */}
               <div
-                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                className={
+                  isMobile
+                    ? "service-card-mobile reveal"
+                    : "p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                }
                 style={{ transitionDelay: "0.125s" }}
               >
-                <div className="text-3xl md:text-4xl mb-3 md:mb-4">📊</div>
+                <div
+                  className={
+                    isMobile
+                      ? "service-icon"
+                      : "text-3xl md:text-4xl mb-3 md:mb-4"
+                  }
+                >
+                  📊
+                </div>
                 <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
                   Level Transferring
                 </h3>
@@ -1017,10 +1147,22 @@ export default function Home() {
 
               {/* Building Survey */}
               <div
-                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                className={
+                  isMobile
+                    ? "service-card-mobile reveal"
+                    : "p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                }
                 style={{ transitionDelay: "0.15s" }}
               >
-                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🏢</div>
+                <div
+                  className={
+                    isMobile
+                      ? "service-icon"
+                      : "text-3xl md:text-4xl mb-3 md:mb-4"
+                  }
+                >
+                  🏢
+                </div>
                 <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
                   Building Survey
                 </h3>
@@ -1031,10 +1173,22 @@ export default function Home() {
 
               {/* Quantity Calculation */}
               <div
-                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                className={
+                  isMobile
+                    ? "service-card-mobile reveal"
+                    : "p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                }
                 style={{ transitionDelay: "0.175s" }}
               >
-                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🧮</div>
+                <div
+                  className={
+                    isMobile
+                      ? "service-icon"
+                      : "text-3xl md:text-4xl mb-3 md:mb-4"
+                  }
+                >
+                  🧮
+                </div>
                 <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
                   Quantity Calculation
                 </h3>
@@ -1046,10 +1200,22 @@ export default function Home() {
 
               {/* Large Size Printing */}
               <div
-                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                className={
+                  isMobile
+                    ? "service-card-mobile reveal"
+                    : "p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                }
                 style={{ transitionDelay: "0.2s" }}
               >
-                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🖨️</div>
+                <div
+                  className={
+                    isMobile
+                      ? "service-icon"
+                      : "text-3xl md:text-4xl mb-3 md:mb-4"
+                  }
+                >
+                  🖨️
+                </div>
                 <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
                   Large Size Printing
                 </h3>

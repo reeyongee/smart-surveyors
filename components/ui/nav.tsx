@@ -24,7 +24,17 @@ export default function Nav() {
   useEffect(() => {
     const handleClickOutside = (event: Event) => {
       const nav = document.querySelector("nav");
-      if (nav && !nav.contains(event.target as Node) && isMobileMenuOpen) {
+      const target = event.target as Node;
+
+      // Don't close if clicking on the hamburger button itself
+      const hamburgerButton = document.querySelector(
+        '[aria-controls="mobile-menu"]'
+      );
+      if (hamburgerButton && hamburgerButton.contains(target)) {
+        return;
+      }
+
+      if (nav && !nav.contains(target) && isMobileMenuOpen) {
         setIsMobileMenuOpen(false);
       }
     };
@@ -52,13 +62,20 @@ export default function Nav() {
     }
   };
 
-  const toggleMobileMenu = () => {
+  const toggleMobileMenu = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     setIsMobileMenuOpen(!isMobileMenuOpen);
 
     // Haptic feedback on mobile
     if (isMobile && "vibrate" in navigator) {
       navigator.vibrate(25);
     }
+  };
+
+  const handleMenuItemClick = () => {
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -138,10 +155,11 @@ export default function Nav() {
           {/* Hamburger menu button - Enhanced for mobile */}
           <button
             onClick={toggleMobileMenu}
-            className={`p-3 rounded-lg transition-all duration-300 relative z-10 touch-manipulation ${
+            onTouchStart={(e) => e.stopPropagation()}
+            className={`p-3 rounded-lg transition-all duration-300 relative z-50 touch-manipulation ${
               isMobileMenuOpen
                 ? "bg-gray-100 border border-gray-200"
-                : "bg-white/10 border border-white/20 backdrop-blur-sm"
+                : "bg-white/20 border border-white/30 backdrop-blur-sm"
             }`}
             style={{
               minWidth: "48px",
@@ -155,18 +173,22 @@ export default function Nav() {
           >
             <div className="w-5 h-5 flex flex-col justify-center items-center">
               <div
-                className={`w-4 h-0.5 bg-black transition-all duration-300 ${
-                  isMobileMenuOpen ? "rotate-45 translate-y-1" : ""
+                className={`w-4 h-0.5 transition-all duration-300 ${
+                  isMobileMenuOpen
+                    ? "rotate-45 translate-y-0.5 bg-gray-800"
+                    : "bg-gray-800"
                 }`}
               ></div>
               <div
-                className={`w-4 h-0.5 bg-black transition-all duration-300 ${
-                  isMobileMenuOpen ? "opacity-0" : "mt-1"
+                className={`w-4 h-0.5 transition-all duration-300 ${
+                  isMobileMenuOpen ? "opacity-0" : "mt-1 bg-gray-800"
                 }`}
               ></div>
               <div
-                className={`w-4 h-0.5 bg-black transition-all duration-300 ${
-                  isMobileMenuOpen ? "-rotate-45 -translate-y-1" : "mt-1"
+                className={`w-4 h-0.5 transition-all duration-300 ${
+                  isMobileMenuOpen
+                    ? "-rotate-45 -translate-y-0.5 bg-gray-800"
+                    : "mt-1 bg-gray-800"
                 }`}
               ></div>
             </div>
@@ -191,13 +213,13 @@ export default function Nav() {
         {/* Mobile menu dropdown - Enhanced */}
         <div
           id="mobile-menu"
-          className={`absolute top-full left-0 right-0 bg-white border-b border-gray-200 transition-all duration-300 ${
+          className={`absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg transition-all duration-300 z-40 ${
             isMobileMenuOpen
               ? "opacity-100 visible transform translate-y-0"
               : "opacity-0 invisible transform -translate-y-2"
           }`}
           style={{
-            maxHeight: isMobileMenuOpen ? "100vh" : "0",
+            maxHeight: isMobileMenuOpen ? "calc(100vh - 80px)" : "0",
             overflow: "hidden",
           }}
           role="menu"
@@ -214,7 +236,7 @@ export default function Nav() {
               }}
               role="menuitem"
               tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={handleMenuItemClick}
             >
               Services
             </a>
@@ -228,7 +250,7 @@ export default function Nav() {
               }}
               role="menuitem"
               tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={handleMenuItemClick}
             >
               Projects
             </a>
@@ -242,7 +264,7 @@ export default function Nav() {
               }}
               role="menuitem"
               tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={handleMenuItemClick}
             >
               Technology
             </a>
@@ -256,7 +278,7 @@ export default function Nav() {
               }}
               role="menuitem"
               tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={handleMenuItemClick}
             >
               About
             </a>
@@ -270,14 +292,10 @@ export default function Nav() {
               }}
               role="menuitem"
               tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={handleMenuItemClick}
             >
               Contact
             </a>
-
-            {/* Separator */}
-            <div className="border-t border-gray-200 my-2"></div>
-
             <a
               href="#portal"
               className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
@@ -288,33 +306,15 @@ export default function Nav() {
               }}
               role="menuitem"
               tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={handleMenuItemClick}
             >
               Client Portal
             </a>
-
-            {/* CTA Button */}
-            <div className="pt-2">
-              <a
-                href="#quote"
-                className="block bg-red-500 text-white text-center py-3 px-4 rounded-lg font-medium hover:bg-red-600 active:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-                style={{
-                  minHeight: "48px",
-                  fontSize: "16px",
-                  WebkitTapHighlightColor: "transparent",
-                }}
-                role="menuitem"
-                tabIndex={isMobileMenuOpen ? 0 : -1}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Get Quote
-              </a>
-            </div>
           </div>
         </div>
       </nav>
 
-      {/* Desktop Get Quote button - positioned separately */}
+      {/* Desktop Get Quote Button */}
       <div className="hidden md:block fixed top-6 right-8 z-50">
         <a
           href="#quote"
@@ -328,7 +328,7 @@ export default function Nav() {
       {/* Mobile menu overlay */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black bg-opacity-25 z-30 md:hidden transition-opacity duration-300"
           onClick={() => setIsMobileMenuOpen(false)}
           aria-hidden="true"
         />
