@@ -2,17 +2,124 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
+
+// Mobile Navigation Icons
+const HomeIcon = ({ active }: { active: boolean }) => (
+  <svg
+    className={`w-6 h-6 ${active ? "text-red-600" : "text-gray-600"}`}
+    fill="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+  </svg>
+);
+
+const ServicesIcon = ({ active }: { active: boolean }) => (
+  <svg
+    className={`w-6 h-6 ${active ? "text-red-600" : "text-gray-600"}`}
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+    />
+  </svg>
+);
+
+const ProjectsIcon = ({ active }: { active: boolean }) => (
+  <svg
+    className={`w-6 h-6 ${active ? "text-red-600" : "text-gray-600"}`}
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+    />
+  </svg>
+);
+
+const ContactIcon = ({ active }: { active: boolean }) => (
+  <svg
+    className={`w-6 h-6 ${active ? "text-red-600" : "text-gray-600"}`}
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+    />
+  </svg>
+);
+
+const MenuIcon = () => (
+  <svg
+    className="w-6 h-6 text-gray-800"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M4 6h16M4 12h16M4 18h16"
+    />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg
+    className="w-6 h-6 text-gray-800"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M6 18L18 6M6 6l12 12"
+    />
+  </svg>
+);
+
+const PhoneIcon = () => (
+  <svg
+    className="w-5 h-5"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+    />
+  </svg>
+);
 
 export default function Nav() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("home");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Mobile detection
+  // Mobile detection and viewport setup
   useEffect(() => {
     const checkMobile = () => {
-      const isMobileDevice =
-        window.innerWidth <= 768 || "ontouchstart" in window;
-      setIsMobile(isMobileDevice);
+      setIsMobile(window.innerWidth < 768);
     };
 
     checkMobile();
@@ -20,319 +127,274 @@ export default function Nav() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Close mobile menu when clicking outside
+  // Handle menu close on route change
   useEffect(() => {
-    const handleClickOutside = (event: Event) => {
-      const nav = document.querySelector("nav");
-      if (nav && !nav.contains(event.target as Node) && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
+    // Close menu when clicking outside
+    const handleClickOutside = (event: MouseEvent) => {
+      const menu = document.querySelector(".mobile-menu");
+      const menuButton = document.querySelector(".menu-button");
+
+      if (
+        menu &&
+        !menu.contains(event.target as Node) &&
+        menuButton &&
+        !menuButton.contains(event.target as Node) &&
+        isMenuOpen
+      ) {
+        setIsMenuOpen(false);
       }
     };
 
-    if (isMobileMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("touchstart", handleClickOutside);
-      // Prevent body scroll when menu is open
-      document.body.style.overflow = "hidden";
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (isMenuOpen && isMobile) {
+      document.body.classList.add("overflow-hidden");
     } else {
-      document.body.style.overflow = "";
+      document.body.classList.remove("overflow-hidden");
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-      document.body.style.overflow = "";
+      document.body.classList.remove("overflow-hidden");
     };
-  }, [isMobileMenuOpen]);
+  }, [isMenuOpen, isMobile]);
 
-  // Handle keyboard navigation
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Escape" && isMobileMenuOpen) {
-      setIsMobileMenuOpen(false);
+  const navigationItems = [
+    { id: "home", label: "Home", href: "#home", icon: HomeIcon },
+    {
+      id: "services",
+      label: "Services",
+      href: "#services",
+      icon: ServicesIcon,
+    },
+    { id: "projects", label: "Projects", href: "#stats", icon: ProjectsIcon },
+    { id: "contact", label: "Contact", href: "#contact", icon: ContactIcon },
+  ];
+
+  const secondaryMenuItems = [
+    { label: "About Us", href: "#about" },
+    { label: "Testimonials", href: "#testimonials" },
+    { label: "Blog", href: "/blog" },
+    { label: "Quote Request", href: "#quote" },
+  ];
+
+  const handleTabClick = (tabId: string, href: string) => {
+    setActiveTab(tabId);
+
+    // Smooth scroll to section
+    const element = document.querySelector(href);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
     }
   };
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-
-    // Haptic feedback on mobile
-    if (isMobile && "vibrate" in navigator) {
-      navigator.vibrate(25);
-    }
+  const handleCall = () => {
+    window.location.href = "tel:+1234567890";
   };
 
   return (
     <>
-      {/* Desktop navbar */}
-      <nav className="hidden md:block fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-white/10 border-white/20 border rounded-full pt-3 pr-4 pb-3 pl-4 shadow-xl backdrop-blur-md">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
+      {/* Top Navigation Bar */}
+      <nav className="mobile-nav">
+        <div className="container mx-auto h-full flex items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2 touch-target">
             <Image
-              src="/SMART-2.svg"
+              src="/logo.svg"
               alt="Smart Surveyors Logo"
-              width={128}
+              width={32}
               height={32}
-              className="w-32 h-8"
-              priority
+              className="w-8 h-8"
             />
-          </div>
-          <div className="flex items-center space-x-6 text-xs text-gray-800 ml-8 font-body">
-            <a
-              href="#services"
-              className="hover:text-red-500 transition-colors focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
-              tabIndex={0}
-            >
-              Services
-            </a>
-            <a
-              href="#projects"
-              className="hover:text-red-500 transition-colors focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
-              tabIndex={0}
-            >
-              Projects
-            </a>
-            <a
-              href="#technology"
-              className="hover:text-red-500 transition-colors focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
-              tabIndex={0}
-            >
-              Technology
-            </a>
-            <a
-              href="#about"
-              className="hover:text-red-500 transition-colors focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
-              tabIndex={0}
-            >
-              About
-            </a>
-            <a
-              href="#contact"
-              className="hover:text-red-500 transition-colors focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
-              tabIndex={0}
-            >
-              Contact
-            </a>
-          </div>
-          <div className="flex items-center space-x-3 ml-8">
-            <a
-              href="#portal"
-              className="text-xs font-medium font-body hover:text-red-500 transition-colors text-gray-800 focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
-              tabIndex={0}
-            >
-              Client Portal
-            </a>
-          </div>
-        </div>
-      </nav>
+            <span className="font-bold text-lg text-gray-800 hidden-mobile">
+              Smart Surveyors
+            </span>
+          </Link>
 
-      {/* Mobile navbar */}
-      <nav
-        className={`md:hidden fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isMobileMenuOpen
-            ? "bg-white border-b border-gray-200 shadow-lg"
-            : "bg-transparent"
-        }`}
-        onKeyDown={handleKeyDown}
-      >
-        <div className="flex items-center justify-between px-4 py-3">
-          {/* Hamburger menu button - Enhanced for mobile */}
-          <button
-            onClick={toggleMobileMenu}
-            className={`p-3 rounded-lg transition-all duration-300 relative z-10 touch-manipulation ${
-              isMobileMenuOpen
-                ? "bg-gray-100 border border-gray-200"
-                : "bg-white/10 border border-white/20 backdrop-blur-sm"
-            }`}
-            style={{
-              minWidth: "48px",
-              minHeight: "48px",
-              WebkitTapHighlightColor: "transparent",
-            }}
-            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={isMobileMenuOpen}
-            aria-controls="mobile-menu"
-            type="button"
-          >
-            <div className="w-5 h-5 flex flex-col justify-center items-center">
-              <div
-                className={`w-4 h-0.5 bg-black transition-all duration-300 ${
-                  isMobileMenuOpen ? "rotate-45 translate-y-1" : ""
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            {navigationItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`touch-target px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeTab === item.id
+                    ? "text-red-600 bg-red-50"
+                    : "text-gray-700 hover:text-red-600 hover:bg-gray-50"
                 }`}
-              ></div>
-              <div
-                className={`w-4 h-0.5 bg-black transition-all duration-300 ${
-                  isMobileMenuOpen ? "opacity-0" : "mt-1"
-                }`}
-              ></div>
-              <div
-                className={`w-4 h-0.5 bg-black transition-all duration-300 ${
-                  isMobileMenuOpen ? "-rotate-45 -translate-y-1" : "mt-1"
-                }`}
-              ></div>
-            </div>
-          </button>
-
-          {/* Centered logo */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
-            <Image
-              src="/SMART-2.svg"
-              alt="Smart Surveyors Logo"
-              width={112}
-              height={28}
-              className="w-28 h-7"
-              priority
-            />
-          </div>
-
-          {/* Empty div to maintain flexbox spacing */}
-          <div className="w-12"></div>
-        </div>
-
-        {/* Mobile menu dropdown - Enhanced */}
-        <div
-          id="mobile-menu"
-          className={`absolute top-full left-0 right-0 bg-white border-b border-gray-200 transition-all duration-300 ${
-            isMobileMenuOpen
-              ? "opacity-100 visible transform translate-y-0"
-              : "opacity-0 invisible transform -translate-y-2"
-          }`}
-          style={{
-            maxHeight: isMobileMenuOpen ? "100vh" : "0",
-            overflow: "hidden",
-          }}
-          role="menu"
-          aria-label="Mobile navigation menu"
-        >
-          <div className="px-4 py-4 space-y-1 max-h-screen overflow-y-auto">
-            <a
-              href="#services"
-              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-              style={{
-                minHeight: "48px",
-                fontSize: "16px",
-                WebkitTapHighlightColor: "transparent",
-              }}
-              role="menuitem"
-              tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Services
-            </a>
-            <a
-              href="#projects"
-              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-              style={{
-                minHeight: "48px",
-                fontSize: "16px",
-                WebkitTapHighlightColor: "transparent",
-              }}
-              role="menuitem"
-              tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Projects
-            </a>
-            <a
-              href="#technology"
-              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-              style={{
-                minHeight: "48px",
-                fontSize: "16px",
-                WebkitTapHighlightColor: "transparent",
-              }}
-              role="menuitem"
-              tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Technology
-            </a>
-            <a
-              href="#about"
-              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-              style={{
-                minHeight: "48px",
-                fontSize: "16px",
-                WebkitTapHighlightColor: "transparent",
-              }}
-              role="menuitem"
-              tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              About
-            </a>
-            <a
-              href="#contact"
-              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-              style={{
-                minHeight: "48px",
-                fontSize: "16px",
-                WebkitTapHighlightColor: "transparent",
-              }}
-              role="menuitem"
-              tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Contact
-            </a>
-
-            {/* Separator */}
-            <div className="border-t border-gray-200 my-2"></div>
-
-            <a
-              href="#portal"
-              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-              style={{
-                minHeight: "48px",
-                fontSize: "16px",
-                WebkitTapHighlightColor: "transparent",
-              }}
-              role="menuitem"
-              tabIndex={isMobileMenuOpen ? 0 : -1}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Client Portal
-            </a>
-
-            {/* CTA Button */}
-            <div className="pt-2">
-              <a
-                href="#quote"
-                className="block bg-red-500 text-white text-center py-3 px-4 rounded-lg font-medium hover:bg-red-600 active:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-                style={{
-                  minHeight: "48px",
-                  fontSize: "16px",
-                  WebkitTapHighlightColor: "transparent",
-                }}
-                role="menuitem"
-                tabIndex={isMobileMenuOpen ? 0 : -1}
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={() => handleTabClick(item.id, item.href)}
               >
-                Get Quote
-              </a>
-            </div>
+                {item.label}
+              </Link>
+            ))}
           </div>
+
+          {/* Desktop CTA */}
+          <div className="hidden md:flex items-center space-x-4">
+            <button
+              onClick={handleCall}
+              className="btn-secondary flex items-center space-x-2"
+            >
+              <PhoneIcon />
+              <span>Call Now</span>
+            </button>
+            <Link href="#quote" className="btn-primary">
+              Get Quote
+            </Link>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="menu-button md:hidden touch-target-comfortable"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
+          </button>
         </div>
       </nav>
 
-      {/* Desktop Get Quote button - positioned separately */}
-      <div className="hidden md:block fixed top-6 right-8 z-50">
-        <a
-          href="#quote"
-          className="flex items-center justify-center h-12 px-6 hover:bg-red-600 focus:bg-red-600 transition-colors text-sm font-medium font-body text-white bg-red-500 rounded-full shadow-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-          tabIndex={0}
-        >
-          Get Quote
-        </a>
-      </div>
+      {/* Mobile Hamburger Menu Overlay */}
+      {isMenuOpen && isMobile && (
+        <div className="mobile-menu fixed inset-0 z-50 md:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+            onClick={() => setIsMenuOpen(false)}
+          />
 
-      {/* Mobile menu overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden transition-opacity duration-300"
-          onClick={() => setIsMobileMenuOpen(false)}
-          aria-hidden="true"
-        />
+          {/* Menu Content */}
+          <div className="absolute right-0 top-0 h-full w-80 max-w-sm bg-white shadow-xl overflow-y-auto">
+            <div className="safe-top p-6">
+              {/* Menu Header */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center space-x-2">
+                  <Image
+                    src="/logo.svg"
+                    alt="Smart Surveyors"
+                    width={24}
+                    height={24}
+                  />
+                  <span className="font-bold text-lg">Smart Surveyors</span>
+                </div>
+                <button
+                  onClick={() => setIsMenuOpen(false)}
+                  className="touch-target"
+                  aria-label="Close menu"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+
+              {/* Primary Navigation */}
+              <div className="space-y-2 mb-8">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+                  Navigation
+                </h3>
+                {navigationItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                      activeTab === item.id
+                        ? "bg-red-50 text-red-600"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                    onClick={() => {
+                      handleTabClick(item.id, item.href);
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <item.icon active={activeTab === item.id} />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Secondary Menu */}
+              <div className="space-y-2 mb-8">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+                  More
+                </h3>
+                {secondaryMenuItems.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="block p-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+
+              {/* Contact Actions */}
+              <div className="space-y-3 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    handleCall();
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full btn-secondary flex items-center justify-center space-x-2"
+                >
+                  <PhoneIcon />
+                  <span>Call (555) 123-4567</span>
+                </button>
+                <Link
+                  href="#quote"
+                  className="w-full btn-primary text-center block"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Get Free Quote
+                </Link>
+              </div>
+
+              {/* Contact Info */}
+              <div className="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-600">
+                <p className="mb-2">
+                  <strong className="text-gray-800">Email:</strong>
+                  <br />
+                  info@smartsurveyors.com
+                </p>
+                <p>
+                  <strong className="text-gray-800">Address:</strong>
+                  <br />
+                  123 Survey Street
+                  <br />
+                  Your City, ST 12345
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* Bottom Navigation (Mobile Only) */}
+      <nav className="bottom-nav md:hidden">
+        <div className="flex items-center justify-around h-full safe-bottom">
+          {navigationItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleTabClick(item.id, item.href)}
+              className="touch-target-comfortable flex flex-col items-center justify-center space-y-1 transition-colors"
+            >
+              <item.icon active={activeTab === item.id} />
+              <span
+                className={`text-xs font-medium ${
+                  activeTab === item.id ? "text-red-600" : "text-gray-600"
+                }`}
+              >
+                {item.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Script from "next/script";
+import Image from "next/image";
 import Nav from "../components/ui/nav";
 import HeroTypewriter from "../components/ui/hero-typewriter";
 import CountUp from "../src/blocks/TextAnimations/CountUp/CountUp";
@@ -30,7 +31,7 @@ const StatsCounter = ({
   duration: number;
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const counterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -42,28 +43,52 @@ const StatsCounter = ({
       { threshold: 0.5 }
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
+    if (counterRef.current) {
+      observer.observe(counterRef.current);
     }
 
     return () => observer.disconnect();
   }, []);
 
   return (
-    <div ref={ref} className="text-center">
+    <div ref={counterRef} className="text-center p-6">
       <div className="text-4xl md:text-5xl font-bold text-red-600 mb-2">
         {isVisible ? <CountUp to={value} duration={duration} /> : "0"}+
       </div>
-      <div className="text-lg md:text-xl text-gray-700">{label}</div>
+      <div className="text-sm md:text-base text-gray-600 font-medium">
+        {label}
+      </div>
     </div>
   );
 };
 
+// Service Card Component
+const ServiceCard = ({
+  title,
+  description,
+  icon,
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+}) => (
+  <div className="card group">
+    <div className="flex items-center mb-4">
+      <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-red-600 mr-4 group-hover:bg-red-600 group-hover:text-white transition-colors">
+        {icon}
+      </div>
+      <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+    </div>
+    <p className="text-gray-600 leading-relaxed">{description}</p>
+  </div>
+);
+
 export default function Home() {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Handle viewport height changes for mobile browsers
   useEffect(() => {
+    setMounted(true);
     setViewportHeight();
 
     const handleResize = () => {
@@ -77,65 +102,36 @@ export default function Home() {
     window.addEventListener("resize", handleResize);
     window.addEventListener("orientationchange", handleOrientationChange);
 
-    // Handle mobile browser address bar show/hide
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setViewportHeight();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleOrientationChange);
-      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
-  // Initialize particles
+  // Initialize particles.js
   useEffect(() => {
-    if (typeof window !== "undefined" && window.particlesJS) {
+    if (mounted && typeof window !== "undefined" && window.particlesJS) {
       window.particlesJS("particles-js", {
         particles: {
-          number: { value: 80, density: { enable: true, value_area: 800 } },
+          number: { value: 50, density: { enable: true, value_area: 800 } },
           color: { value: "#ffffff" },
-          shape: {
-            type: "circle",
-            stroke: { width: 0, color: "#000000" },
-            polygon: { nb_sides: 5 },
-          },
-          opacity: {
-            value: 0.5,
-            random: false,
-            anim: { enable: false, speed: 1, opacity_min: 0.1, sync: false },
-          },
-          size: {
-            value: 3,
-            random: true,
-            anim: { enable: false, speed: 40, size_min: 0.1, sync: false },
-          },
+          shape: { type: "circle" },
+          opacity: { value: 0.3, random: true },
+          size: { value: 3, random: true },
           line_linked: {
             enable: true,
             distance: 150,
             color: "#ffffff",
-            opacity: 0.4,
+            opacity: 0.2,
             width: 1,
           },
           move: {
             enable: true,
-            speed: 6,
+            speed: 2,
             direction: "none",
             random: false,
             straight: false,
             out_mode: "out",
-            bounce: false,
-            attract: { enable: false, rotateX: 600, rotateY: 1200 },
           },
         },
         interactivity: {
@@ -145,137 +141,51 @@ export default function Home() {
             onclick: { enable: true, mode: "push" },
             resize: true,
           },
-          modes: {
-            grab: { distance: 400, line_linked: { opacity: 1 } },
-            bubble: {
-              distance: 400,
-              size: 40,
-              duration: 2,
-              opacity: 8,
-              speed: 3,
-            },
-            repulse: { distance: 200, duration: 0.4 },
-            push: { particles_nb: 4 },
-            remove: { particles_nb: 2 },
-          },
         },
         retina_detect: true,
       });
-      setIsLoaded(true);
     }
-  }, []);
+  }, [mounted]);
+
+  if (!mounted) {
+    return null; // Prevent hydration mismatch
+  }
 
   return (
     <>
-      <Script
-        src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"
-        strategy="beforeInteractive"
-        onLoad={() => {
-          if (typeof window !== "undefined" && window.particlesJS) {
-            window.particlesJS("particles-js", {
-              particles: {
-                number: {
-                  value: 80,
-                  density: { enable: true, value_area: 800 },
-                },
-                color: { value: "#ffffff" },
-                shape: {
-                  type: "circle",
-                  stroke: { width: 0, color: "#000000" },
-                  polygon: { nb_sides: 5 },
-                },
-                opacity: {
-                  value: 0.5,
-                  random: false,
-                  anim: {
-                    enable: false,
-                    speed: 1,
-                    opacity_min: 0.1,
-                    sync: false,
-                  },
-                },
-                size: {
-                  value: 3,
-                  random: true,
-                  anim: {
-                    enable: false,
-                    speed: 40,
-                    size_min: 0.1,
-                    sync: false,
-                  },
-                },
-                line_linked: {
-                  enable: true,
-                  distance: 150,
-                  color: "#ffffff",
-                  opacity: 0.4,
-                  width: 1,
-                },
-                move: {
-                  enable: true,
-                  speed: 6,
-                  direction: "none",
-                  random: false,
-                  straight: false,
-                  out_mode: "out",
-                  bounce: false,
-                  attract: { enable: false, rotateX: 600, rotateY: 1200 },
-                },
-              },
-              interactivity: {
-                detect_on: "canvas",
-                events: {
-                  onhover: { enable: true, mode: "repulse" },
-                  onclick: { enable: true, mode: "push" },
-                  resize: true,
-                },
-                modes: {
-                  grab: { distance: 400, line_linked: { opacity: 1 } },
-                  bubble: {
-                    distance: 400,
-                    size: 40,
-                    duration: 2,
-                    opacity: 8,
-                    speed: 3,
-                  },
-                  repulse: { distance: 200, duration: 0.4 },
-                  push: { particles_nb: 4 },
-                  remove: { particles_nb: 2 },
-                },
-              },
-              retina_detect: true,
-            });
-            setIsLoaded(true);
-          }
-        }}
-      />
+      <Nav />
 
-      <div className="overflow-x-hidden">
-        <Nav />
-
+      <main className="main-content">
         {/* Hero Section */}
-        <section id="home" className="hero-section mobile-viewport-fix">
-          <div id="particles-js"></div>
-          <div className="hero-content">
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 font-playfair">
-                <HeroTypewriter />
+        <section id="home" className="section-hero">
+          <div id="particles-js" className="absolute inset-0 z-1" />
+
+          <div className="section-content container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center animate-fade-in-up">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+                Professional Land
+                <br />
+                <span className="text-red-200">
+                  <HeroTypewriter />
+                </span>
               </h1>
-              <p className="text-lg md:text-xl lg:text-2xl mb-8 opacity-90 max-w-3xl mx-auto">
-                Professional land surveying services with over 15 years of
-                experience. We provide precise boundary surveys, building
-                set-outs, AutoCAD drafting, and more.
+
+              <p className="text-lg md:text-xl lg:text-2xl mb-8 text-red-100 max-w-3xl mx-auto leading-relaxed">
+                Precision surveying services with cutting-edge technology and
+                over 15 years of expertise. Your trusted partner for accurate
+                property boundaries and construction layouts.
               </p>
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <a
-                  href="#contact"
-                  className="btn btn-primary text-lg px-8 py-4 bg-white text-red-600 hover:bg-gray-100"
+                  href="#quote"
+                  className="btn-primary text-lg px-8 py-4 w-full sm:w-auto"
                 >
                   Get Free Quote
                 </a>
                 <a
                   href="#services"
-                  className="btn btn-secondary text-lg px-8 py-4 border-2 border-white text-white hover:bg-white hover:text-red-600"
+                  className="btn-secondary bg-white bg-opacity-20 border-white text-white hover:bg-white hover:text-red-600 text-lg px-8 py-4 w-full sm:w-auto"
                 >
                   Our Services
                 </a>
@@ -285,21 +195,22 @@ export default function Home() {
         </section>
 
         {/* Stats Section */}
-        <section id="stats" className="stats-section full-section">
+        <section id="stats" className="section bg-gray-50">
           <div className="container mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-gray-900 font-playfair">
-                Trusted by Professionals
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+                Trusted by Thousands
               </h2>
-              <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-                Our commitment to precision and reliability has made us the
-                preferred choice for surveying professionals across the region.
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Our commitment to excellence has made us the preferred choice
+                for property owners, developers, and construction professionals
+                across the region.
               </p>
             </div>
 
-            <div className="responsive-grid">
+            <div className="card-grid">
               <StatsCounter
-                value={500}
+                value={2500}
                 label="Projects Completed"
                 duration={2000}
               />
@@ -313,265 +224,404 @@ export default function Home() {
                 label="Client Satisfaction"
                 duration={2500}
               />
-            </div>
-          </div>
-        </section>
-
-        {/* About Section */}
-        <section id="about" className="about-section full-section">
-          <div className="container mx-auto">
-            <div className="responsive-grid items-center">
-              <div>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-gray-900 font-playfair">
-                  About Smart Surveyors
-                </h2>
-                <p className="text-lg md:text-xl text-gray-600 mb-6 leading-relaxed">
-                  With over 15 years of experience in the surveying industry,
-                  Smart Surveyors has built a reputation for delivering
-                  accurate, reliable, and efficient surveying solutions.
-                </p>
-                <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed">
-                  Our team of licensed professionals uses the latest technology
-                  and equipment to ensure precision in every project, from
-                  residential boundary surveys to large-scale commercial
-                  developments.
-                </p>
-                <a
-                  href="#contact"
-                  className="btn btn-primary text-lg px-8 py-4"
-                >
-                  Learn More
-                </a>
-              </div>
-              <div className="order-first md:order-last">
-                <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-8 text-white">
-                  <h3 className="text-2xl md:text-3xl font-bold mb-4 font-playfair">
-                    Why Choose Us?
-                  </h3>
-                  <ul className="space-y-4 text-lg">
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-white rounded-full mr-4"></span>
-                      Licensed & Insured Professionals
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-white rounded-full mr-4"></span>
-                      Latest GPS & Laser Technology
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-white rounded-full mr-4"></span>
-                      Fast Turnaround Times
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-white rounded-full mr-4"></span>
-                      Competitive Pricing
-                    </li>
-                  </ul>
-                </div>
-              </div>
+              <StatsCounter value={50} label="Team Members" duration={1800} />
             </div>
           </div>
         </section>
 
         {/* Services Section */}
-        <section id="services" className="services-section full-section">
+        <section id="services" className="section">
           <div className="container mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-gray-900 font-playfair">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
                 Our Services
               </h2>
-              <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 Comprehensive surveying solutions tailored to meet your specific
-                needs, from residential properties to commercial developments.
+                needs with precision, efficiency, and professional expertise.
               </p>
             </div>
 
-            <div className="responsive-grid">
-              <div className="card">
-                <h3 className="text-xl md:text-2xl font-bold mb-4 text-gray-900 font-playfair">
-                  Boundary Surveys
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Precise property line determination using advanced GPS and
-                  laser technology to establish accurate boundaries for your
-                  property.
+            <div className="card-grid">
+              <ServiceCard
+                title="Boundary Surveys"
+                description="Accurate property line determination using the latest GPS and total station technology for legal documentation and dispute resolution."
+                icon={
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                    />
+                  </svg>
+                }
+              />
+
+              <ServiceCard
+                title="Topographic Surveys"
+                description="Detailed elevation mapping and terrain analysis for engineering design, construction planning, and environmental assessments."
+                icon={
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
+                    />
+                  </svg>
+                }
+              />
+
+              <ServiceCard
+                title="Construction Layout"
+                description="Precise positioning and stakeout services for building construction, utilities, and infrastructure development projects."
+                icon={
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    />
+                  </svg>
+                }
+              />
+
+              <ServiceCard
+                title="ALTA/NSPS Surveys"
+                description="Comprehensive commercial property surveys meeting ALTA/NSPS standards for title insurance and real estate transactions."
+                icon={
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                }
+              />
+
+              <ServiceCard
+                title="Subdivision Platting"
+                description="Complete subdivision design and platting services including utility planning, drainage analysis, and regulatory compliance."
+                icon={
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                    />
+                  </svg>
+                }
+              />
+
+              <ServiceCard
+                title="GPS & GIS Services"
+                description="Advanced GPS positioning and Geographic Information System mapping for asset management and spatial analysis."
+                icon={
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                }
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* About Section */}
+        <section id="about" className="section bg-gray-50">
+          <div className="container mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div className="animate-slide-in-left">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
+                  Why Choose Smart Surveyors?
+                </h2>
+                <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                  With over 15 years of experience in the surveying industry, we
+                  combine traditional expertise with cutting-edge technology to
+                  deliver accurate, reliable results for every project.
                 </p>
-                <ul className="text-gray-600 space-y-2">
-                  <li>• Property line identification</li>
-                  <li>• Corner monument location</li>
-                  <li>• Encroachment detection</li>
-                  <li>• Legal documentation</li>
-                </ul>
+
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-800 mb-1">
+                        Licensed & Insured
+                      </h3>
+                      <p className="text-gray-600">
+                        Fully licensed professional surveyors with comprehensive
+                        insurance coverage.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-800 mb-1">
+                        Latest Technology
+                      </h3>
+                      <p className="text-gray-600">
+                        State-of-the-art GPS, robotic total stations, and drone
+                        surveying capabilities.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-800 mb-1">
+                        Fast Turnaround
+                      </h3>
+                      <p className="text-gray-600">
+                        Quick project completion without compromising accuracy
+                        or quality.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="card">
-                <h3 className="text-xl md:text-2xl font-bold mb-4 text-gray-900 font-playfair">
-                  Building Set-Outs
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Professional construction layout services to ensure your
-                  building is positioned correctly according to approved plans
-                  and regulations.
-                </p>
-                <ul className="text-gray-600 space-y-2">
-                  <li>• Foundation layout</li>
-                  <li>• Elevation certificates</li>
-                  <li>• Construction staking</li>
-                  <li>• As-built surveys</li>
-                </ul>
-              </div>
-
-              <div className="card">
-                <h3 className="text-xl md:text-2xl font-bold mb-4 text-gray-900 font-playfair">
-                  AutoCAD Drafting
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Professional CAD drafting services to create detailed,
-                  accurate technical drawings for your surveying and
-                  construction projects.
-                </p>
-                <ul className="text-gray-600 space-y-2">
-                  <li>• Survey plat preparation</li>
-                  <li>• Site plan development</li>
-                  <li>• Topographic mapping</li>
-                  <li>• Technical illustrations</li>
-                </ul>
+              <div className="relative">
+                <div className="aspect-w-4 aspect-h-3 rounded-lg overflow-hidden shadow-xl">
+                  <Image
+                    src="/images/survey-1.jpg"
+                    alt="Professional surveyor at work"
+                    width={600}
+                    height={450}
+                    className="w-full h-full object-cover"
+                    priority
+                  />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Contact Section */}
-        <section id="contact" className="contact-section full-section">
+        <section id="contact" className="section bg-gray-900 text-white">
           <div className="container mx-auto">
-            <div className="responsive-grid items-center">
-              <div>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-white font-playfair">
-                  Ready to Get Started?
-                </h2>
-                <p className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed">
-                  Contact us today for a free consultation and quote. Our
-                  experienced team is ready to help you with all your surveying
-                  needs.
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Ready to Get Started?
+              </h2>
+              <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+                Contact us today for a free consultation and quote. Our team is
+                ready to help you with all your surveying needs.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-8 h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Call Us</h3>
+                <p className="text-gray-300">(555) 123-4567</p>
+              </div>
+
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-8 h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Email Us</h3>
+                <p className="text-gray-300">info@smartsurveyors.com</p>
+              </div>
+
+              <div className="text-center md:col-span-2 lg:col-span-1">
+                <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-8 h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Visit Us</h3>
+                <p className="text-gray-300">
+                  123 Survey Street
+                  <br />
+                  Your City, ST 12345
                 </p>
-                <div className="space-y-4 text-gray-300">
-                  <div className="flex items-center text-lg">
-                    <span className="w-6 h-6 bg-red-600 rounded-full mr-4 flex items-center justify-center">
-                      📞
-                    </span>
-                    (555) 123-4567
-                  </div>
-                  <div className="flex items-center text-lg">
-                    <span className="w-6 h-6 bg-red-600 rounded-full mr-4 flex items-center justify-center">
-                      ✉️
-                    </span>
-                    info@smartsurveyors.com
-                  </div>
-                  <div className="flex items-center text-lg">
-                    <span className="w-6 h-6 bg-red-600 rounded-full mr-4 flex items-center justify-center">
-                      📍
-                    </span>
-                    123 Survey Street, Your City, ST 12345
-                  </div>
-                </div>
               </div>
-              <div className="order-first md:order-last">
-                <div className="bg-white rounded-2xl p-8">
-                  <h3 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900 font-playfair">
-                    Get Your Free Quote
-                  </h3>
-                  <form className="space-y-6">
-                    <div>
-                      <label
-                        htmlFor="name"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        placeholder="Your full name"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        placeholder="your@email.com"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="phone"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        placeholder="(555) 123-4567"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="service"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Service Needed
-                      </label>
-                      <select
-                        id="service"
-                        name="service"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      >
-                        <option value="">Select a service</option>
-                        <option value="boundary">Boundary Survey</option>
-                        <option value="building">Building Set-Out</option>
-                        <option value="autocad">AutoCAD Drafting</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="message"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Project Details
-                      </label>
-                      <textarea
-                        id="message"
-                        name="message"
-                        rows={4}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        placeholder="Tell us about your project..."
-                      ></textarea>
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full btn btn-primary text-lg py-4"
-                    >
-                      Send Message
-                    </button>
-                  </form>
-                </div>
-              </div>
+            </div>
+
+            <div className="text-center">
+              <a
+                href="#quote"
+                className="btn-primary text-lg px-8 py-4 inline-block"
+              >
+                Get Your Free Quote Today
+              </a>
             </div>
           </div>
         </section>
-      </div>
+      </main>
+
+      {/* Particles.js Script */}
+      <Script
+        src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"
+        strategy="afterInteractive"
+        onLoad={() => {
+          if (typeof window !== "undefined" && window.particlesJS) {
+            window.particlesJS("particles-js", {
+              particles: {
+                number: {
+                  value: 50,
+                  density: { enable: true, value_area: 800 },
+                },
+                color: { value: "#ffffff" },
+                shape: { type: "circle" },
+                opacity: { value: 0.3, random: true },
+                size: { value: 3, random: true },
+                line_linked: {
+                  enable: true,
+                  distance: 150,
+                  color: "#ffffff",
+                  opacity: 0.2,
+                  width: 1,
+                },
+                move: {
+                  enable: true,
+                  speed: 2,
+                  direction: "none",
+                  random: false,
+                  straight: false,
+                  out_mode: "out",
+                },
+              },
+              interactivity: {
+                detect_on: "canvas",
+                events: {
+                  onhover: { enable: true, mode: "repulse" },
+                  onclick: { enable: true, mode: "push" },
+                  resize: true,
+                },
+              },
+              retina_detect: true,
+            });
+          }
+        }}
+      />
     </>
   );
 }
