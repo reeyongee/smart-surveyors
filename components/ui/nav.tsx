@@ -1,320 +1,338 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 
 export default function Nav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
 
-  // Enhanced mobile detection with touch support
+  // Mobile detection
   useEffect(() => {
     const checkMobile = () => {
       const isMobileDevice =
-        window.innerWidth <= 768 ||
-        "ontouchstart" in window ||
-        navigator.maxTouchPoints > 0;
+        window.innerWidth <= 768 || "ontouchstart" in window;
       setIsMobile(isMobileDevice);
     };
 
     checkMobile();
-    const handleResize = () => {
-      checkMobile();
-      // Close mobile menu on resize to desktop
-      if (window.innerWidth > 768 && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [isMobileMenuOpen]);
-
-  // Track scroll position for nav styling
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Close mobile menu when clicking outside or pressing escape
+  // Close mobile menu when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+    const handleClickOutside = (event: Event) => {
       const nav = document.querySelector("nav");
-      const target = event.target as Node;
-
-      if (nav && !nav.contains(target) && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && isMobileMenuOpen) {
+      if (nav && !nav.contains(event.target as Node) && isMobileMenuOpen) {
         setIsMobileMenuOpen(false);
       }
     };
 
     if (isMobileMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("touchstart", handleClickOutside, {
-        passive: true,
-      });
-      document.addEventListener("keydown", handleKeyDown);
-
+      document.addEventListener("touchstart", handleClickOutside);
       // Prevent body scroll when menu is open
-      document.body.classList.add("mobile-menu-open");
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.classList.remove("mobile-menu-open");
+      document.body.style.overflow = "";
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.classList.remove("mobile-menu-open");
+      document.body.style.overflow = "";
     };
   }, [isMobileMenuOpen]);
 
-  const toggleMobileMenu = useCallback(() => {
-    setIsMobileMenuOpen((prev) => !prev);
-  }, []);
+  // Handle keyboard navigation
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Escape" && isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  };
 
-  const closeMobileMenu = useCallback(() => {
-    setIsMobileMenuOpen(false);
-  }, []);
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
 
-  // Navigation items with proper accessibility
-  const navItems = [
-    { href: "#home", label: "Home", ariaLabel: "Navigate to home section" },
-    { href: "#about", label: "About", ariaLabel: "Navigate to about section" },
-    {
-      href: "#services",
-      label: "Services",
-      ariaLabel: "Navigate to services section",
-    },
-    {
-      href: "#contact",
-      label: "Contact",
-      ariaLabel: "Navigate to contact section",
-    },
-  ];
-
-  // Handle smooth scrolling with proper focus management
-  const handleNavClick = useCallback(
-    (href: string, event: React.MouseEvent) => {
-      event.preventDefault();
-
-      const targetId = href.substring(1);
-      const targetElement = document.getElementById(targetId);
-
-      if (targetElement) {
-        // Close mobile menu first
-        closeMobileMenu();
-
-        // Smooth scroll to target
-        targetElement.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-          inline: "nearest",
-        });
-
-        // Update URL without triggering navigation
-        history.replaceState(null, "", href);
-
-        // Set focus to target for accessibility
-        setTimeout(() => {
-          targetElement.focus({ preventScroll: true });
-        }, 500);
-      }
-    },
-    [closeMobileMenu]
-  );
+    // Haptic feedback on mobile
+    if (isMobile && "vibrate" in navigator) {
+      navigator.vibrate(25);
+    }
+  };
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? "bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm"
-          : "bg-white/90 backdrop-blur-sm"
-      }`}
-      role="navigation"
-      aria-label="Main navigation"
-    >
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20">
-          {/* Logo */}
-          <div className="flex-shrink-0">
+    <>
+      {/* Desktop navbar */}
+      <nav className="hidden md:block fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-white/10 border-white/20 border rounded-full pt-3 pr-4 pb-3 pl-4 shadow-xl backdrop-blur-md">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Image
+              src="/SMART-2.svg"
+              alt="Smart Surveyors Logo"
+              width={128}
+              height={32}
+              className="w-32 h-8"
+              priority
+            />
+          </div>
+          <div className="flex items-center space-x-6 text-xs text-gray-800 ml-8 font-body">
             <a
-              href="#home"
-              onClick={(e) => handleNavClick("#home", e)}
-              className="flex items-center space-x-2 touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded-lg p-2 -m-2"
-              aria-label="Smart Surveyors - Go to home"
+              href="#services"
+              className="hover:text-red-500 transition-colors focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
+              tabIndex={0}
             >
-              <Image
-                src="/logo.svg"
-                alt="Smart Surveyors Logo"
-                width={40}
-                height={40}
-                className="w-8 h-8 sm:w-10 sm:h-10"
-                priority
-              />
-              <span className="font-playfair font-bold text-lg sm:text-xl text-red-600 hidden sm:block">
-                Smart Surveyors
-              </span>
+              Services
             </a>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-1">
-              {navItems.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  onClick={(e) => handleNavClick(item.href, e)}
-                  className="px-4 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition-all duration-200 font-medium touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                  aria-label={item.ariaLabel}
-                >
-                  {item.label}
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* CTA Button - Desktop */}
-          <div className="hidden md:block">
+            <a
+              href="#projects"
+              className="hover:text-red-500 transition-colors focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
+              tabIndex={0}
+            >
+              Projects
+            </a>
+            <a
+              href="#technology"
+              className="hover:text-red-500 transition-colors focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
+              tabIndex={0}
+            >
+              Technology
+            </a>
+            <a
+              href="#about"
+              className="hover:text-red-500 transition-colors focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
+              tabIndex={0}
+            >
+              About
+            </a>
             <a
               href="#contact"
-              onClick={(e) => handleNavClick("#contact", e)}
-              className="btn btn-primary inline-flex items-center justify-center px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-              aria-label="Get a quote - Contact us"
+              className="hover:text-red-500 transition-colors focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
+              tabIndex={0}
             >
-              Get Quote
+              Contact
             </a>
           </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button
-              onClick={toggleMobileMenu}
-              className="inline-flex items-center justify-center p-3 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 touch-manipulation"
-              aria-expanded={isMobileMenuOpen}
-              aria-controls="mobile-menu"
-              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-              style={{ minWidth: "48px", minHeight: "48px" }} // Ensure 48x48px touch target
+          <div className="flex items-center space-x-3 ml-8">
+            <a
+              href="#portal"
+              className="text-xs font-medium font-body hover:text-red-500 transition-colors text-gray-800 focus:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded px-2 py-1"
+              tabIndex={0}
             >
-              <span className="sr-only">
-                {isMobileMenuOpen ? "Close menu" : "Open menu"}
-              </span>
-
-              {/* Animated hamburger icon */}
-              <div className="w-6 h-6 relative">
-                <span
-                  className={`absolute block h-0.5 w-6 bg-current transform transition-all duration-300 ${
-                    isMobileMenuOpen ? "rotate-45 top-3" : "top-1"
-                  }`}
-                />
-                <span
-                  className={`absolute block h-0.5 w-6 bg-current transform transition-all duration-300 top-3 ${
-                    isMobileMenuOpen ? "opacity-0" : "opacity-100"
-                  }`}
-                />
-                <span
-                  className={`absolute block h-0.5 w-6 bg-current transform transition-all duration-300 ${
-                    isMobileMenuOpen ? "-rotate-45 top-3" : "top-5"
-                  }`}
-                />
-              </div>
-            </button>
+              Client Portal
+            </a>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Mobile menu */}
-      <div
-        id="mobile-menu"
-        className={`md:hidden fixed inset-0 top-16 sm:top-20 z-40 transform transition-all duration-300 ease-in-out ${
+      {/* Mobile navbar */}
+      <nav
+        className={`md:hidden fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isMobileMenuOpen
-            ? "translate-x-0 opacity-100 visible"
-            : "translate-x-full opacity-0 invisible"
+            ? "bg-white border-b border-gray-200 shadow-lg"
+            : "bg-transparent"
         }`}
-        aria-hidden={!isMobileMenuOpen}
+        onKeyDown={handleKeyDown}
       >
-        {/* Backdrop */}
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Hamburger menu button - Enhanced for mobile */}
+          <button
+            onClick={toggleMobileMenu}
+            className={`p-3 rounded-lg transition-all duration-300 relative z-10 touch-manipulation ${
+              isMobileMenuOpen
+                ? "bg-gray-100 border border-gray-200"
+                : "bg-white/10 border border-white/20 backdrop-blur-sm"
+            }`}
+            style={{
+              minWidth: "48px",
+              minHeight: "48px",
+              WebkitTapHighlightColor: "transparent",
+            }}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-menu"
+            type="button"
+          >
+            <div className="w-5 h-5 flex flex-col justify-center items-center">
+              <div
+                className={`w-4 h-0.5 bg-black transition-all duration-300 ${
+                  isMobileMenuOpen ? "rotate-45 translate-y-1" : ""
+                }`}
+              ></div>
+              <div
+                className={`w-4 h-0.5 bg-black transition-all duration-300 ${
+                  isMobileMenuOpen ? "opacity-0" : "mt-1"
+                }`}
+              ></div>
+              <div
+                className={`w-4 h-0.5 bg-black transition-all duration-300 ${
+                  isMobileMenuOpen ? "-rotate-45 -translate-y-1" : "mt-1"
+                }`}
+              ></div>
+            </div>
+          </button>
+
+          {/* Centered logo */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
+            <Image
+              src="/SMART-2.svg"
+              alt="Smart Surveyors Logo"
+              width={112}
+              height={28}
+              className="w-28 h-7"
+              priority
+            />
+          </div>
+
+          {/* Empty div to maintain flexbox spacing */}
+          <div className="w-12"></div>
+        </div>
+
+        {/* Mobile menu dropdown - Enhanced */}
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm"
-          onClick={closeMobileMenu}
-          aria-hidden="true"
-        />
+          id="mobile-menu"
+          className={`absolute top-full left-0 right-0 bg-white border-b border-gray-200 transition-all duration-300 ${
+            isMobileMenuOpen
+              ? "opacity-100 visible transform translate-y-0"
+              : "opacity-0 invisible transform -translate-y-2"
+          }`}
+          style={{
+            maxHeight: isMobileMenuOpen ? "100vh" : "0",
+            overflow: "hidden",
+          }}
+          role="menu"
+          aria-label="Mobile navigation menu"
+        >
+          <div className="px-4 py-4 space-y-1 max-h-screen overflow-y-auto">
+            <a
+              href="#services"
+              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+              style={{
+                minHeight: "48px",
+                fontSize: "16px",
+                WebkitTapHighlightColor: "transparent",
+              }}
+              role="menuitem"
+              tabIndex={isMobileMenuOpen ? 0 : -1}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Services
+            </a>
+            <a
+              href="#projects"
+              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+              style={{
+                minHeight: "48px",
+                fontSize: "16px",
+                WebkitTapHighlightColor: "transparent",
+              }}
+              role="menuitem"
+              tabIndex={isMobileMenuOpen ? 0 : -1}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Projects
+            </a>
+            <a
+              href="#technology"
+              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+              style={{
+                minHeight: "48px",
+                fontSize: "16px",
+                WebkitTapHighlightColor: "transparent",
+              }}
+              role="menuitem"
+              tabIndex={isMobileMenuOpen ? 0 : -1}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Technology
+            </a>
+            <a
+              href="#about"
+              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+              style={{
+                minHeight: "48px",
+                fontSize: "16px",
+                WebkitTapHighlightColor: "transparent",
+              }}
+              role="menuitem"
+              tabIndex={isMobileMenuOpen ? 0 : -1}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              About
+            </a>
+            <a
+              href="#contact"
+              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+              style={{
+                minHeight: "48px",
+                fontSize: "16px",
+                WebkitTapHighlightColor: "transparent",
+              }}
+              role="menuitem"
+              tabIndex={isMobileMenuOpen ? 0 : -1}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Contact
+            </a>
 
-        {/* Menu panel */}
-        <div className="mobile-menu relative bg-white/98 backdrop-blur-md h-full overflow-y-auto">
-          <div className="px-4 py-6 space-y-2">
-            {/* Mobile navigation items */}
-            {navItems.map((item, index) => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={(e) => handleNavClick(item.href, e)}
-                className="block w-full text-left px-6 py-4 rounded-xl text-lg font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 transition-all duration-200 touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                style={{ minHeight: "56px" }} // Extra touch-friendly height for mobile
-                aria-label={item.ariaLabel}
-                tabIndex={isMobileMenuOpen ? 0 : -1}
-              >
-                <span className="flex items-center">
-                  <span className="w-2 h-2 bg-red-600 rounded-full mr-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                  {item.label}
-                </span>
-              </a>
-            ))}
+            {/* Separator */}
+            <div className="border-t border-gray-200 my-2"></div>
 
-            {/* Mobile CTA Button */}
-            <div className="pt-6 px-6">
+            <a
+              href="#portal"
+              className="block text-gray-800 hover:text-red-500 active:text-red-500 transition-colors font-body py-3 px-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+              style={{
+                minHeight: "48px",
+                fontSize: "16px",
+                WebkitTapHighlightColor: "transparent",
+              }}
+              role="menuitem"
+              tabIndex={isMobileMenuOpen ? 0 : -1}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Client Portal
+            </a>
+
+            {/* CTA Button */}
+            <div className="pt-2">
               <a
-                href="#contact"
-                onClick={(e) => handleNavClick("#contact", e)}
-                className="btn btn-primary w-full inline-flex items-center justify-center px-6 py-4 text-base font-medium rounded-xl transition-all duration-200 touch-manipulation focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                style={{ minHeight: "56px" }} // Extra touch-friendly height
-                aria-label="Get a quote - Contact us"
+                href="#quote"
+                className="block bg-red-500 text-white text-center py-3 px-4 rounded-lg font-medium hover:bg-red-600 active:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                style={{
+                  minHeight: "48px",
+                  fontSize: "16px",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+                role="menuitem"
                 tabIndex={isMobileMenuOpen ? 0 : -1}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 Get Quote
               </a>
             </div>
-
-            {/* Contact info in mobile menu */}
-            <div className="pt-8 px-6 border-t border-gray-200 mt-8">
-              <div className="text-sm text-gray-600 space-y-2">
-                <p className="font-medium text-gray-900">
-                  Ready to get started?
-                </p>
-                <p>
-                  Call us at{" "}
-                  <a
-                    href="tel:+1234567890"
-                    className="text-red-600 hover:text-red-700 font-medium"
-                  >
-                    (123) 456-7890
-                  </a>
-                </p>
-                <p>
-                  Or{" "}
-                  <a
-                    href="mailto:info@smartsurveyors.com"
-                    className="text-red-600 hover:text-red-700 font-medium"
-                  >
-                    email us
-                  </a>
-                </p>
-              </div>
-            </div>
           </div>
         </div>
+      </nav>
+
+      {/* Desktop Get Quote button - positioned separately */}
+      <div className="hidden md:block fixed top-6 right-8 z-50">
+        <a
+          href="#quote"
+          className="flex items-center justify-center h-12 px-6 hover:bg-red-600 focus:bg-red-600 transition-colors text-sm font-medium font-body text-white bg-red-500 rounded-full shadow-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+          tabIndex={0}
+        >
+          Get Quote
+        </a>
       </div>
-    </nav>
+
+      {/* Mobile menu overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden transition-opacity duration-300"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+    </>
   );
 }

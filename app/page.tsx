@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Script from "next/script";
 import Nav from "../components/ui/nav";
 import HeroTypewriter from "../components/ui/hero-typewriter";
@@ -24,550 +24,1091 @@ const StatsCounter = ({
   value,
   label,
   duration,
+  currentIndex,
+  sectionIndex,
 }: {
   value: number;
   label: string;
   duration: number;
+  currentIndex: number;
+  sectionIndex: number;
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [showLabel, setShowLabel] = useState(false);
+  const [shouldStart, setShouldStart] = useState(false);
+  const [key, setKey] = useState(0); // Force re-render of CountUp
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.5 }
-    );
+    // Reset and start animation when we enter the section
+    if (currentIndex === sectionIndex) {
+      setShowLabel(false);
+      setShouldStart(false); // Reset first
+      setKey((prev) => prev + 1); // Force CountUp to re-render
 
-    if (ref.current) {
-      observer.observe(ref.current);
+      // Small delay to ensure reset, then start
+      setTimeout(() => {
+        setShouldStart(true);
+      }, 100);
+    } else {
+      setShouldStart(false);
+      setShowLabel(false);
     }
+  }, [currentIndex, sectionIndex]);
 
-    return () => observer.disconnect();
-  }, []);
+  const handleCountEnd = () => {
+    setShowLabel(true);
+  };
 
   return (
-    <div ref={ref} className="text-center">
-      <div className="text-4xl md:text-5xl font-bold text-red-600 mb-2">
-        {isVisible ? <CountUp to={value} duration={duration} /> : "0"}+
+    <div className="text-center">
+      <div className="mb-4">
+        <div style={{ color: "#db2225" }}>
+          <CountUp
+            key={key} // Force re-render when key changes
+            to={value}
+            from={0}
+            duration={duration}
+            className="font-heading font-bold text-4xl md:text-6xl lg:text-7xl"
+            startWhen={shouldStart}
+            onEnd={handleCountEnd}
+          />
+          <span className="font-heading font-bold text-4xl md:text-6xl lg:text-7xl">
+            +
+          </span>
+        </div>
       </div>
-      <div className="text-lg md:text-xl text-gray-700">{label}</div>
+      <div
+        className={`font-body text-base md:text-xl text-gray-700 transition-opacity duration-500 ${
+          showLabel ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {label}
+      </div>
     </div>
   );
 };
 
 export default function Home() {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [touchStartY, setTouchStartY] = useState(0);
+  const [touchStartTime, setTouchStartTime] = useState(0);
+  const [isTouchDragging, setIsTouchDragging] = useState(false);
+  const [particlesLoaded, setParticlesLoaded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Handle viewport height changes for mobile browsers
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const wheelDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const lastWheelTimeRef = useRef(0);
+  const isScrollingRef = useRef(isScrolling);
+  const currentIndexRef = useRef(currentIndex);
+  const touchStartYRef = useRef(touchStartY);
+  const touchStartTimeRef = useRef(touchStartTime);
+  const isTouchDraggingRef = useRef(isTouchDragging);
+
+  // Mobile detection and viewport setup
   useEffect(() => {
-    setViewportHeight();
+    // Mobile detection
+    const checkMobile = () => {
+      const isMobileDevice =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        ) ||
+        window.innerWidth <= 768 ||
+        "ontouchstart" in window;
+      setIsMobile(isMobileDevice);
+    };
 
+    // Set initial viewport height
+    setViewportHeight();
+    checkMobile();
+
+    // Update on resize and orientation change
     const handleResize = () => {
       setViewportHeight();
+      checkMobile();
     };
 
     const handleOrientationChange = () => {
-      setTimeout(setViewportHeight, 100);
+      setTimeout(() => {
+        setViewportHeight();
+      }, 100);
     };
 
     window.addEventListener("resize", handleResize);
     window.addEventListener("orientationchange", handleOrientationChange);
 
-    // Handle mobile browser address bar show/hide
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setViewportHeight();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleOrientationChange);
-      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
-  // Initialize particles
+  // Keep refs in sync with state
   useEffect(() => {
+    isScrollingRef.current = isScrolling;
+  }, [isScrolling]);
+
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  useEffect(() => {
+    touchStartYRef.current = touchStartY;
+  }, [touchStartY]);
+
+  useEffect(() => {
+    touchStartTimeRef.current = touchStartTime;
+  }, [touchStartTime]);
+
+  useEffect(() => {
+    isTouchDraggingRef.current = isTouchDragging;
+  }, [isTouchDragging]);
+
+  const updateActiveDot = useCallback((index: number) => {
+    const dots = document.querySelectorAll(".progress-dot");
+    dots.forEach((dot) => {
+      dot.classList.remove("active");
+    });
+    dots[index]?.classList.add("active");
+  }, []);
+
+  // Enhanced section change function with mobile optimizations
+  const changeSection = useCallback(
+    (index: number) => {
+      const sections = document.querySelectorAll(".section");
+      sections.forEach((section) => {
+        section.classList.remove("active");
+      });
+
+      sections[index]?.classList.add("active");
+      updateActiveDot(index);
+
+      const reveals = sections[index]?.querySelectorAll(".reveal");
+      reveals?.forEach((el, i) => {
+        setTimeout(() => {
+          el.classList.add("active");
+        }, i * 75);
+      });
+
+      sections.forEach((section, i) => {
+        if (i !== index) {
+          const otherReveals = section.querySelectorAll(".reveal");
+          otherReveals.forEach((el) => {
+            el.classList.remove("active");
+          });
+        }
+      });
+
+      // Haptic feedback on mobile
+      if (isMobile && "vibrate" in navigator) {
+        navigator.vibrate(50);
+      }
+    },
+    [updateActiveDot, isMobile]
+  );
+
+  // Single useEffect that runs only once on mount
+  useEffect(() => {
+    if (!particlesLoaded) return;
+
+    // Initialize particles.js with mobile optimizations
     if (typeof window !== "undefined" && window.particlesJS) {
-      window.particlesJS("particles-js", {
+      const particleConfig = {
         particles: {
-          number: { value: 80, density: { enable: true, value_area: 800 } },
-          color: { value: "#ffffff" },
+          number: {
+            value: isMobile ? 15 : 25, // Fewer particles on mobile for better performance
+            density: { enable: true, value_area: 800 },
+          },
+          color: {
+            value: ["#db2225", "#E0C097", "#000000", "#374151"],
+          },
           shape: {
-            type: "circle",
-            stroke: { width: 0, color: "#000000" },
-            polygon: { nb_sides: 5 },
+            type: ["circle", "triangle"],
+            stroke: { width: 2, color: "#db2225" },
           },
           opacity: {
-            value: 0.5,
-            random: false,
-            anim: { enable: false, speed: 1, opacity_min: 0.1, sync: false },
+            value: isMobile ? 0.5 : 0.7, // Reduced opacity on mobile
+            random: true,
+            anim: {
+              enable: true,
+              speed: 1,
+              opacity_min: 0.3,
+              sync: false,
+            },
           },
           size: {
-            value: 3,
+            value: isMobile ? 3 : 4, // Smaller particles on mobile
             random: true,
-            anim: { enable: false, speed: 40, size_min: 0.1, sync: false },
+            anim: {
+              enable: true,
+              speed: 2,
+              size_min: 2,
+              sync: false,
+            },
           },
           line_linked: {
             enable: true,
-            distance: 150,
-            color: "#ffffff",
-            opacity: 0.4,
-            width: 1,
+            distance: isMobile ? 150 : 200, // Shorter connections on mobile
+            color: "#db2225",
+            opacity: isMobile ? 0.4 : 0.6,
+            width: 2,
+            shadow: {
+              enable: !isMobile, // Disable shadows on mobile for performance
+              color: "#E0C097",
+              blur: 3,
+            },
           },
           move: {
             enable: true,
-            speed: 6,
+            speed: isMobile ? 1 : 1.5, // Slower movement on mobile
             direction: "none",
-            random: false,
+            random: true,
             straight: false,
-            out_mode: "out",
-            bounce: false,
-            attract: { enable: false, rotateX: 600, rotateY: 1200 },
+            out_mode: "bounce",
+            bounce: true,
+            attract: {
+              enable: !isMobile, // Disable attraction on mobile for performance
+              rotateX: 600,
+              rotateY: 1200,
+            },
           },
         },
         interactivity: {
           detect_on: "canvas",
           events: {
-            onhover: { enable: true, mode: "repulse" },
-            onclick: { enable: true, mode: "push" },
+            onhover: {
+              enable: !isMobile, // Disable hover on mobile
+              mode: ["grab", "bubble"],
+            },
+            onclick: {
+              enable: true,
+              mode: "repulse",
+            },
             resize: true,
           },
           modes: {
-            grab: { distance: 400, line_linked: { opacity: 1 } },
+            grab: {
+              distance: 250,
+              line_linked: {
+                opacity: 1,
+                color: "#a91b2e",
+                width: 3,
+              },
+            },
             bubble: {
-              distance: 400,
-              size: 40,
+              distance: 200,
+              size: 8,
               duration: 2,
-              opacity: 8,
+              opacity: 1,
               speed: 3,
             },
-            repulse: { distance: 200, duration: 0.4 },
-            push: { particles_nb: 4 },
-            remove: { particles_nb: 2 },
+            repulse: {
+              distance: 150,
+              duration: 0.4,
+            },
+            push: { particles_nb: 2 },
+            remove: { particles_nb: 1 },
           },
         },
         retina_detect: true,
-      });
-      setIsLoaded(true);
+      };
+
+      window.particlesJS("particles-js", particleConfig);
+      addSurveyMeasurements();
     }
-  }, []);
+
+    // Initialize interactive grid
+    if (typeof window !== "undefined") {
+      const gridElement = document.getElementById("interactive-grid");
+      if (gridElement && !gridElement.dataset.initialized) {
+        import("../components/ui/grid").then(({ default: Grid }) => {
+          new Grid(gridElement);
+          gridElement.dataset.initialized = "true";
+        });
+      }
+    }
+
+    const dots = document.querySelectorAll(".progress-dot");
+    const magneticElements = document.querySelectorAll(".magnetic");
+
+    updateActiveDot(currentIndex);
+
+    // Magnetic effect (disabled on mobile for performance)
+    if (!isMobile) {
+      magneticElements.forEach((el) => {
+        const element = el as HTMLElement;
+        element.addEventListener("mousemove", (e) => {
+          const rect = element.getBoundingClientRect();
+          const x = e.clientX - rect.left - rect.width / 2;
+          const y = e.clientY - rect.top - rect.height / 2;
+          element.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px)`;
+        });
+
+        element.addEventListener("mouseleave", () => {
+          element.style.transform = "translate(0px, 0px)";
+        });
+      });
+    }
+
+    // Enhanced wheel event handler for desktop
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+
+      if (isScrollingRef.current) return;
+
+      const now = Date.now();
+      const timeSinceLastWheel = now - lastWheelTimeRef.current;
+
+      // Clear any existing wheel debounce timeout
+      if (wheelDebounceRef.current) {
+        clearTimeout(wheelDebounceRef.current);
+      }
+
+      // If wheel events are coming too quickly (momentum scrolling), debounce them
+      if (timeSinceLastWheel < 100) {
+        wheelDebounceRef.current = setTimeout(() => {
+          handleWheelAction(e);
+        }, 150);
+        return;
+      }
+
+      lastWheelTimeRef.current = now;
+      handleWheelAction(e);
+    };
+
+    const handleWheelAction = (e: WheelEvent) => {
+      const sections = document.querySelectorAll(".section");
+      const currentIdx = currentIndexRef.current;
+      let newIndex = currentIdx;
+
+      // Enhanced wheel event detection to prevent over-scrolling
+      const deltaY = e.deltaY;
+      const absDeltaY = Math.abs(deltaY);
+
+      // Define thresholds for valid scroll gestures
+      const minScrollThreshold = 30;
+      const maxScrollThreshold = 150;
+
+      // Check if this is a reasonable scroll gesture
+      const isValidScroll =
+        absDeltaY >= minScrollThreshold && absDeltaY <= maxScrollThreshold;
+
+      if (isValidScroll) {
+        if (deltaY > 0) {
+          if (currentIdx < sections.length - 1) {
+            newIndex = currentIdx + 1;
+          }
+        } else {
+          if (currentIdx > 0) {
+            newIndex = currentIdx - 1;
+          }
+        }
+
+        // Only proceed if there's actually a change
+        if (newIndex !== currentIdx) {
+          // Clear any existing timeout
+          if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+          }
+
+          setIsScrolling(true);
+          setCurrentIndex(newIndex);
+          changeSection(newIndex);
+
+          scrollTimeoutRef.current = setTimeout(() => {
+            setIsScrolling(false);
+            scrollTimeoutRef.current = null;
+          }, 500);
+        }
+      }
+    };
+
+    // Enhanced touch event handlers with better mobile support
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      setTouchStartY(touch.clientY);
+      setTouchStartTime(Date.now());
+      setIsTouchDragging(false);
+
+      // Prevent default behavior to avoid scrolling issues
+      e.preventDefault();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isTouchDraggingRef.current) {
+        const currentY = e.touches[0].clientY;
+        const diff = Math.abs(touchStartYRef.current - currentY);
+
+        // If user has moved more than 15px, consider it dragging
+        if (diff > 15) {
+          setIsTouchDragging(true);
+        }
+      }
+
+      // Prevent default to avoid page bounce
+      e.preventDefault();
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (isScrollingRef.current) return;
+
+      const touchEndY = e.changedTouches[0].clientY;
+      const diff = touchStartYRef.current - touchEndY;
+      const touchDuration = Date.now() - touchStartTimeRef.current;
+
+      // Calculate velocity (pixels per millisecond)
+      const velocity = Math.abs(diff) / Math.max(touchDuration, 1);
+
+      const sections = document.querySelectorAll(".section");
+      const currentIdx = currentIndexRef.current;
+      let newIndex = currentIdx;
+
+      // Enhanced swipe detection optimized for mobile
+      const minSwipeDistance = isMobile ? 50 : 80; // Lower threshold for mobile
+      const maxSwipeDuration = 1000; // Increased duration for better accessibility
+      const minVelocity = 0.05; // Lower velocity threshold
+      const maxVelocity = 3.0; // Higher max velocity
+
+      // More lenient swipe detection for mobile
+      const isDraggingGesture =
+        isTouchDraggingRef.current && Math.abs(diff) > 100;
+      const adjustedMinDistance = isDraggingGesture ? 80 : minSwipeDistance;
+
+      const isValidSwipe =
+        Math.abs(diff) > adjustedMinDistance &&
+        touchDuration < maxSwipeDuration &&
+        velocity > minVelocity &&
+        velocity < maxVelocity;
+
+      if (isValidSwipe) {
+        if (diff > 0) {
+          // Swipe up - next section
+          if (currentIdx < sections.length - 1) {
+            newIndex = currentIdx + 1;
+          }
+        } else {
+          // Swipe down - previous section
+          if (currentIdx > 0) {
+            newIndex = currentIdx - 1;
+          }
+        }
+      }
+
+      // Only proceed if there's actually a change
+      if (newIndex !== currentIdx) {
+        // Clear any existing timeout
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+
+        setIsScrolling(true);
+        setCurrentIndex(newIndex);
+        changeSection(newIndex);
+
+        scrollTimeoutRef.current = setTimeout(() => {
+          setIsScrolling(false);
+          scrollTimeoutRef.current = null;
+        }, 600); // Shorter timeout for mobile
+      }
+
+      // Reset touch state
+      setIsTouchDragging(false);
+    };
+
+    // Dot click handler with touch improvements
+    const handleDotClick = (e: Event) => {
+      if (isScrollingRef.current) return;
+
+      const dot = e.currentTarget as HTMLElement;
+      const index = parseInt(dot.getAttribute("data-index") || "0");
+      const currentIdx = currentIndexRef.current;
+
+      if (index !== currentIdx) {
+        // Clear any existing timeout
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+
+        setIsScrolling(true);
+        setCurrentIndex(index);
+        changeSection(index);
+
+        // Shorter timeout for better mobile responsiveness
+        scrollTimeoutRef.current = setTimeout(() => {
+          setIsScrolling(false);
+          scrollTimeoutRef.current = null;
+        }, 800);
+      }
+    };
+
+    // Add event listeners with passive options for better mobile performance
+    dots.forEach((dot) => {
+      dot.addEventListener("click", handleDotClick);
+      // Add touch events for better mobile support
+      if (isMobile) {
+        dot.addEventListener("touchstart", handleDotClick, { passive: false });
+      }
+    });
+
+    // Only add wheel events on non-mobile devices
+    if (!isMobile) {
+      window.addEventListener("wheel", handleWheel, { passive: false });
+    }
+
+    // Touch events for mobile navigation
+    document.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("touchend", handleTouchEnd, { passive: false });
+
+    // Cleanup function
+    return () => {
+      if (!isMobile) {
+        window.removeEventListener("wheel", handleWheel);
+      }
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleTouchEnd);
+
+      dots.forEach((dot) => {
+        dot.removeEventListener("click", handleDotClick);
+        if (isMobile) {
+          dot.removeEventListener("touchstart", handleDotClick);
+        }
+      });
+
+      // Clear any pending timeouts
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
+      }
+      if (wheelDebounceRef.current) {
+        clearTimeout(wheelDebounceRef.current);
+        wheelDebounceRef.current = null;
+      }
+    };
+  }, [particlesLoaded, updateActiveDot, changeSection, isMobile]);
+
+  const addSurveyMeasurements = () => {
+    const particlesContainer = document.getElementById("particles-js");
+    if (!particlesContainer) return;
+
+    // Remove existing measurements
+    const existingMeasurements = particlesContainer.querySelectorAll(
+      ".survey-measurement"
+    );
+    existingMeasurements.forEach((el) => el.remove());
+
+    // Survey measurement data - reduced for mobile
+    const surveyData = isMobile
+      ? [
+          { text: "N 45°12'30\" E", x: 15, y: 20 },
+          { text: "125.50'", x: 80, y: 15 },
+          { text: "S 22°45'15\" W", x: 25, y: 75 },
+          { text: "89.25'", x: 70, y: 80 },
+          { text: "Elev: 1,245.6'", x: 50, y: 50 },
+          { text: "BM #23", x: 85, y: 45 },
+        ]
+      : [
+          { text: "N 45°12'30\" E", x: 15, y: 20 },
+          { text: "125.50'", x: 80, y: 15 },
+          { text: "S 22°45'15\" W", x: 25, y: 75 },
+          { text: "89.25'", x: 70, y: 80 },
+          { text: "Elev: 1,245.6'", x: 50, y: 50 },
+          { text: "BM #23", x: 85, y: 45 },
+          { text: "POB", x: 10, y: 85 },
+          { text: "N 78°30'00\" W", x: 60, y: 25 },
+          { text: "156.75'", x: 35, y: 60 },
+          { text: "IP #1", x: 90, y: 70 },
+        ];
+
+    surveyData.forEach((data, index) => {
+      const measurementEl = document.createElement("div");
+      measurementEl.className = "survey-measurement";
+      measurementEl.textContent = data.text;
+      measurementEl.style.cssText = `
+        position: absolute;
+        left: ${data.x}%;
+        top: ${data.y}%;
+        color: ${index % 2 === 0 ? "#db2225" : "#000000"};
+        font-family: 'Inter', sans-serif;
+        font-size: ${isMobile ? "10px" : "12px"};
+        font-weight: 500;
+        text-shadow: 1px 1px 2px rgba(224, 192, 151, 0.3);
+        pointer-events: none;
+        z-index: 5;
+        opacity: 0;
+        transform: translateX(-50%) translateY(-50%);
+        animation: surveyFade ${3 + Math.random() * 4}s ease-in-out infinite;
+        animation-delay: ${Math.random() * 2}s;
+      `;
+      particlesContainer.appendChild(measurementEl);
+    });
+  };
 
   return (
     <>
       <Script
-        src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"
-        strategy="beforeInteractive"
-        onLoad={() => {
-          if (typeof window !== "undefined" && window.particlesJS) {
-            window.particlesJS("particles-js", {
-              particles: {
-                number: {
-                  value: 80,
-                  density: { enable: true, value_area: 800 },
-                },
-                color: { value: "#ffffff" },
-                shape: {
-                  type: "circle",
-                  stroke: { width: 0, color: "#000000" },
-                  polygon: { nb_sides: 5 },
-                },
-                opacity: {
-                  value: 0.5,
-                  random: false,
-                  anim: {
-                    enable: false,
-                    speed: 1,
-                    opacity_min: 0.1,
-                    sync: false,
-                  },
-                },
-                size: {
-                  value: 3,
-                  random: true,
-                  anim: {
-                    enable: false,
-                    speed: 40,
-                    size_min: 0.1,
-                    sync: false,
-                  },
-                },
-                line_linked: {
-                  enable: true,
-                  distance: 150,
-                  color: "#ffffff",
-                  opacity: 0.4,
-                  width: 1,
-                },
-                move: {
-                  enable: true,
-                  speed: 6,
-                  direction: "none",
-                  random: false,
-                  straight: false,
-                  out_mode: "out",
-                  bounce: false,
-                  attract: { enable: false, rotateX: 600, rotateY: 1200 },
-                },
-              },
-              interactivity: {
-                detect_on: "canvas",
-                events: {
-                  onhover: { enable: true, mode: "repulse" },
-                  onclick: { enable: true, mode: "push" },
-                  resize: true,
-                },
-                modes: {
-                  grab: { distance: 400, line_linked: { opacity: 1 } },
-                  bubble: {
-                    distance: 400,
-                    size: 40,
-                    duration: 2,
-                    opacity: 8,
-                    speed: 3,
-                  },
-                  repulse: { distance: 200, duration: 0.4 },
-                  push: { particles_nb: 4 },
-                  remove: { particles_nb: 2 },
-                },
-              },
-              retina_detect: true,
-            });
-            setIsLoaded(true);
-          }
-        }}
+        src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"
+        onLoad={() => setParticlesLoaded(true)}
       />
-
-      <div className="overflow-x-hidden">
+      <div className="bg-white text-black font-body">
         <Nav />
 
-        {/* Hero Section */}
-        <section id="home" className="hero-section mobile-viewport-fix">
+        {/* Progress Indicator - Enhanced for mobile */}
+        <div className="progress-bar">
+          <div
+            className="progress-dot"
+            data-index="0"
+            role="button"
+            aria-label="Go to section 1"
+            tabIndex={0}
+          ></div>
+          <div
+            className="progress-dot"
+            data-index="1"
+            role="button"
+            aria-label="Go to section 2"
+            tabIndex={0}
+          ></div>
+          <div
+            className="progress-dot"
+            data-index="2"
+            role="button"
+            aria-label="Go to section 3"
+            tabIndex={0}
+          ></div>
+          <div
+            className="progress-dot"
+            data-index="3"
+            role="button"
+            aria-label="Go to section 4"
+            tabIndex={0}
+          ></div>
+        </div>
+
+        {/* Sections */}
+        <section className="section active bg-white" data-index="0">
           <div id="particles-js"></div>
-          <div className="hero-content">
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 font-playfair">
-                <HeroTypewriter />
-              </h1>
-              <p className="text-lg md:text-xl lg:text-2xl mb-8 opacity-90 max-w-3xl mx-auto">
-                Professional land surveying services with over 15 years of
-                experience. We provide precise boundary surveys, building
-                set-outs, AutoCAD drafting, and more.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <a
-                  href="#contact"
-                  className="btn btn-primary text-lg px-8 py-4 bg-white text-red-600 hover:bg-gray-100"
-                >
-                  Get Free Quote
-                </a>
-                <a
-                  href="#services"
-                  className="btn btn-secondary text-lg px-8 py-4 border-2 border-white text-white hover:bg-white hover:text-red-600"
-                >
-                  Our Services
-                </a>
-              </div>
+          {/* Light overlay for better text contrast */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(255, 255, 255, 0.45)",
+              zIndex: 1,
+              pointerEvents: "none",
+            }}
+          ></div>
+          <div
+            className="content-overlay container mx-auto h-full flex flex-col justify-center px-4 md:px-8"
+            style={{ position: "relative", zIndex: 2 }}
+          >
+            <HeroTypewriter className="reveal active" />
+            {/* Mobile and desktop button positioning - improved for mobile */}
+            <div
+              className="reveal active mt-8 md:mt-0 md:absolute md:top-[650px] md:left-8"
+              style={{
+                transitionDelay: "0.4s",
+              }}
+            >
+              <button
+                className="bg-red-500 text-white px-8 py-4 md:px-12 md:py-4 font-body transition-all duration-300 magnetic text-base md:text-lg tracking-wide w-full md:w-auto rounded-lg md:rounded-none"
+                style={{
+                  backgroundColor: "#ef4444",
+                  minHeight: "48px", // Touch-friendly height
+                  fontSize: "16px", // Prevent zoom on iOS
+                }}
+                onMouseEnter={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#991b1b";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#ef4444";
+                  }
+                }}
+                onTouchStart={(e) => {
+                  e.currentTarget.style.backgroundColor = "#991b1b";
+                }}
+                onTouchEnd={(e) => {
+                  e.currentTarget.style.backgroundColor = "#ef4444";
+                }}
+                onClick={() => {
+                  if (isScrollingRef.current) return;
+
+                  const currentIdx = currentIndexRef.current;
+                  if (1 !== currentIdx) {
+                    if (scrollTimeoutRef.current) {
+                      clearTimeout(scrollTimeoutRef.current);
+                    }
+
+                    setIsScrolling(true);
+                    setCurrentIndex(1);
+                    changeSection(1);
+
+                    scrollTimeoutRef.current = setTimeout(() => {
+                      setIsScrolling(false);
+                      scrollTimeoutRef.current = null;
+                    }, 800);
+                  }
+                }}
+              >
+                View Our Projects
+              </button>
             </div>
           </div>
         </section>
 
-        {/* Stats Section */}
-        <section id="stats" className="stats-section full-section">
-          <div className="container mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-gray-900 font-playfair">
-                Trusted by Professionals
-              </h2>
-              <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-                Our commitment to precision and reliability has made us the
-                preferred choice for surveying professionals across the region.
+        <section className="section bg-sand-100" data-index="1">
+          {/* Interactive Grid Background */}
+          <div className="image-grid image-grid--img" id="interactive-grid">
+            <div className="image-grid__item pos-1">
+              <div
+                className="image-grid__item-img"
+                style={{ backgroundImage: "url('/images/survey-1.jpg')" }}
+              ></div>
+            </div>
+            <div className="image-grid__item pos-2">
+              <div
+                className="image-grid__item-img"
+                style={{ backgroundImage: "url('/images/survey-2.jpg')" }}
+              ></div>
+            </div>
+            <div className="image-grid__item pos-3">
+              <div
+                className="image-grid__item-img"
+                style={{ backgroundImage: "url('/images/survey-3.jpg')" }}
+              ></div>
+            </div>
+            <div className="image-grid__item pos-4">
+              <div
+                className="image-grid__item-img"
+                style={{ backgroundImage: "url('/images/survey-4.jpg')" }}
+              ></div>
+            </div>
+            <div className="image-grid__item pos-5">
+              <div
+                className="image-grid__item-img"
+                style={{ backgroundImage: "url('/images/survey-5.jpg')" }}
+              ></div>
+            </div>
+            <div className="image-grid__item pos-6">
+              <div
+                className="image-grid__item-img"
+                style={{ backgroundImage: "url('/images/survey-6.jpg')" }}
+              ></div>
+            </div>
+            <div className="image-grid__item pos-7">
+              <div
+                className="image-grid__item-img"
+                style={{ backgroundImage: "url('/images/survey-7.jpg')" }}
+              ></div>
+            </div>
+            <div className="image-grid__item pos-8">
+              <div
+                className="image-grid__item-img"
+                style={{ backgroundImage: "url('/images/survey-8.jpg')" }}
+              ></div>
+            </div>
+            <div className="image-grid__item pos-9">
+              <div
+                className="image-grid__item-img"
+                style={{ backgroundImage: "url('/images/survey-9.jpg')" }}
+              ></div>
+            </div>
+            <div className="image-grid__item pos-10">
+              <div
+                className="image-grid__item-img"
+                style={{ backgroundImage: "url('/images/survey-10.jpg')" }}
+              ></div>
+            </div>
+          </div>
+          {/* Light overlay for better contrast - similar to hero section */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(255, 255, 255, 0.45)",
+              zIndex: 10,
+              pointerEvents: "none",
+            }}
+          ></div>
+          {/* Centered Content */}
+          <div
+            className="container mx-auto h-full flex flex-col justify-center items-center px-4 md:px-8 text-center"
+            style={{ position: "relative", zIndex: 11 }}
+          >
+            <div
+              className="reveal max-w-4xl mb-8 md:mb-16 mt-8"
+              style={{
+                padding: "24px 32px",
+              }}
+            >
+              <h1
+                className="font-heading font-semibold heading-tight mb-2 mt-4"
+                style={{
+                  fontSize: "clamp(32px, 8vw, 88px)",
+                  lineHeight: "0.9",
+                  color: "#db2225",
+                }}
+              >
+                Proof, in Every Plot.
+              </h1>
+              <p
+                className="font-body mt-6 pt-18 text-gray-700"
+                style={{
+                  fontSize: "clamp(16px, 4vw, 22px)",
+                  lineHeight: "1.6",
+                }}
+              >
+                For more than a decade, we&apos;ve been the trusted starting
+                point for developers, architects, and engineers — delivering
+                everything from precise land subdivisions and level transfers to
+                full set-outs and AutoCAD drafting.
               </p>
             </div>
 
-            <div className="responsive-grid">
-              <StatsCounter
-                value={500}
-                label="Projects Completed"
-                duration={2000}
-              />
+            {/* Stats Counters */}
+            <div
+              className="grid grid-cols-2 gap-4 md:gap-16 reveal mb-8 md:mb-16"
+              style={{ transitionDelay: "0.4s" }}
+            >
               <StatsCounter
                 value={15}
-                label="Years Experience"
-                duration={1500}
+                label="Years of Experience"
+                duration={1}
+                currentIndex={currentIndex}
+                sectionIndex={1}
               />
               <StatsCounter
-                value={98}
-                label="Client Satisfaction"
-                duration={2500}
+                value={200}
+                label="Projects Completed"
+                duration={1}
+                currentIndex={currentIndex}
+                sectionIndex={1}
               />
             </div>
-          </div>
-        </section>
 
-        {/* About Section */}
-        <section id="about" className="about-section full-section">
-          <div className="container mx-auto">
-            <div className="responsive-grid items-center">
-              <div>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-gray-900 font-playfair">
-                  About Smart Surveyors
-                </h2>
-                <p className="text-lg md:text-xl text-gray-600 mb-6 leading-relaxed">
-                  With over 15 years of experience in the surveying industry,
-                  Smart Surveyors has built a reputation for delivering
-                  accurate, reliable, and efficient surveying solutions.
-                </p>
-                <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed">
-                  Our team of licensed professionals uses the latest technology
-                  and equipment to ensure precision in every project, from
-                  residential boundary surveys to large-scale commercial
-                  developments.
-                </p>
-                <a
-                  href="#contact"
-                  className="btn btn-primary text-lg px-8 py-4"
-                >
-                  Learn More
-                </a>
-              </div>
-              <div className="order-first md:order-last">
-                <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-8 text-white">
-                  <h3 className="text-2xl md:text-3xl font-bold mb-4 font-playfair">
-                    Why Choose Us?
-                  </h3>
-                  <ul className="space-y-4 text-lg">
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-white rounded-full mr-4"></span>
-                      Licensed & Insured Professionals
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-white rounded-full mr-4"></span>
-                      Latest GPS & Laser Technology
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-white rounded-full mr-4"></span>
-                      Fast Turnaround Times
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-2 h-2 bg-white rounded-full mr-4"></span>
-                      Competitive Pricing
-                    </li>
-                  </ul>
-                </div>
-              </div>
+            {/* Explore Projects Button - Centered and mobile optimized */}
+            <div
+              className="reveal flex justify-center"
+              style={{ transitionDelay: "0.6s" }}
+            >
+              <button
+                className="bg-red-500 text-white px-8 py-4 md:px-12 md:py-4 font-body transition-all duration-300 magnetic text-base md:text-lg tracking-wide w-full md:w-auto max-w-xs md:max-w-none rounded-lg md:rounded-none"
+                style={{
+                  backgroundColor: "#ef4444",
+                  minHeight: "48px",
+                  fontSize: "16px",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#991b1b";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#ef4444";
+                  }
+                }}
+                onTouchStart={(e) => {
+                  e.currentTarget.style.backgroundColor = "#991b1b";
+                }}
+                onTouchEnd={(e) => {
+                  e.currentTarget.style.backgroundColor = "#ef4444";
+                }}
+              >
+                Explore Our Projects
+              </button>
             </div>
           </div>
         </section>
 
-        {/* Services Section */}
-        <section id="services" className="services-section full-section">
-          <div className="container mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-gray-900 font-playfair">
-                Our Services
-              </h2>
-              <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-                Comprehensive surveying solutions tailored to meet your specific
-                needs, from residential properties to commercial developments.
-              </p>
-            </div>
-
-            <div className="responsive-grid">
-              <div className="card">
-                <h3 className="text-xl md:text-2xl font-bold mb-4 text-gray-900 font-playfair">
-                  Boundary Surveys
+        <section className="section bg-red-100" data-index="2">
+          <div className="container mx-auto h-full flex flex-col justify-center px-4 md:px-8 pt-16 md:pt-24">
+            <h2
+              className="font-heading font-semibold heading-tight mb-8 md:mb-16 text-center reveal text-black"
+              style={{ fontSize: "clamp(48px, 6vw, 72px)", lineHeight: "0.9" }}
+            >
+              Our Services
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto">
+              {/* Land Surveying */}
+              <div
+                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                style={{ transitionDelay: "0.025s" }}
+              >
+                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🗺️</div>
+                <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
+                  Land Surveying
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  Precise property line determination using advanced GPS and
-                  laser technology to establish accurate boundaries for your
-                  property.
+                <p className="font-body text-gray-700 text-sm md:text-base leading-relaxed">
+                  Professional boundary surveys and property mapping with GPS
+                  precision.
                 </p>
-                <ul className="text-gray-600 space-y-2">
-                  <li>• Property line identification</li>
-                  <li>• Corner monument location</li>
-                  <li>• Encroachment detection</li>
-                  <li>• Legal documentation</li>
-                </ul>
               </div>
 
-              <div className="card">
-                <h3 className="text-xl md:text-2xl font-bold mb-4 text-gray-900 font-playfair">
-                  Building Set-Outs
+              {/* Building Set Out */}
+              <div
+                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                style={{ transitionDelay: "0.05s" }}
+              >
+                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🏗️</div>
+                <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
+                  Building Set Out
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  Professional construction layout services to ensure your
-                  building is positioned correctly according to approved plans
-                  and regulations.
+                <p className="font-body text-gray-700 text-sm md:text-base leading-relaxed">
+                  Accurate construction staking and layout for precise building
+                  placement.
                 </p>
-                <ul className="text-gray-600 space-y-2">
-                  <li>• Foundation layout</li>
-                  <li>• Elevation certificates</li>
-                  <li>• Construction staking</li>
-                  <li>• As-built surveys</li>
-                </ul>
               </div>
 
-              <div className="card">
-                <h3 className="text-xl md:text-2xl font-bold mb-4 text-gray-900 font-playfair">
+              {/* L&C Sections */}
+              <div
+                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                style={{ transitionDelay: "0.075s" }}
+              >
+                <div className="text-3xl md:text-4xl mb-3 md:mb-4">📏</div>
+                <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
+                  L&C Sections
+                </h3>
+                <p className="font-body text-gray-700 text-sm md:text-base leading-relaxed">
+                  Longitudinal and cross-sectional surveys for infrastructure
+                  projects.
+                </p>
+              </div>
+
+              {/* AutoCAD Drafting */}
+              <div
+                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                style={{ transitionDelay: "0.1s" }}
+              >
+                <div className="text-3xl md:text-4xl mb-3 md:mb-4">📐</div>
+                <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
                   AutoCAD Drafting
                 </h3>
-                <p className="text-gray-600 mb-6">
-                  Professional CAD drafting services to create detailed,
-                  accurate technical drawings for your surveying and
-                  construction projects.
+                <p className="font-body text-gray-700 text-sm md:text-base leading-relaxed">
+                  Technical drawings and plans with professional CAD services.
                 </p>
-                <ul className="text-gray-600 space-y-2">
-                  <li>• Survey plat preparation</li>
-                  <li>• Site plan development</li>
-                  <li>• Topographic mapping</li>
-                  <li>• Technical illustrations</li>
-                </ul>
+              </div>
+
+              {/* Level Transferring */}
+              <div
+                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                style={{ transitionDelay: "0.125s" }}
+              >
+                <div className="text-3xl md:text-4xl mb-3 md:mb-4">📊</div>
+                <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
+                  Level Transferring
+                </h3>
+                <p className="font-body text-gray-700 text-sm md:text-base leading-relaxed">
+                  Precise elevation transfer and height datum establishment.
+                </p>
+              </div>
+
+              {/* Building Survey */}
+              <div
+                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                style={{ transitionDelay: "0.15s" }}
+              >
+                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🏢</div>
+                <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
+                  Building Survey
+                </h3>
+                <p className="font-body text-gray-700 text-sm md:text-base leading-relaxed">
+                  Comprehensive structural assessments and condition reports.
+                </p>
+              </div>
+
+              {/* Quantity Calculation */}
+              <div
+                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                style={{ transitionDelay: "0.175s" }}
+              >
+                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🧮</div>
+                <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
+                  Quantity Calculation
+                </h3>
+                <p className="font-body text-gray-700 text-sm md:text-base leading-relaxed">
+                  Accurate material estimates and volume calculations for
+                  projects.
+                </p>
+              </div>
+
+              {/* Large Size Printing */}
+              <div
+                className="p-4 md:p-6 border-2 border-red-200 bg-white/70 backdrop-blur-sm rounded interactive-card reveal"
+                style={{ transitionDelay: "0.2s" }}
+              >
+                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🖨️</div>
+                <h3 className="font-heading font-medium heading-tight mb-2 md:mb-3 text-lg md:text-xl text-black">
+                  Large Size Printing
+                </h3>
+                <p className="font-body text-gray-700 text-sm md:text-base leading-relaxed">
+                  Professional plotting and printing services for technical
+                  drawings.
+                </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Contact Section */}
-        <section id="contact" className="contact-section full-section">
-          <div className="container mx-auto">
-            <div className="responsive-grid items-center">
-              <div>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-white font-playfair">
-                  Ready to Get Started?
-                </h2>
-                <p className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed">
-                  Contact us today for a free consultation and quote. Our
-                  experienced team is ready to help you with all your surveying
-                  needs.
-                </p>
-                <div className="space-y-4 text-gray-300">
-                  <div className="flex items-center text-lg">
-                    <span className="w-6 h-6 bg-red-600 rounded-full mr-4 flex items-center justify-center">
-                      📞
-                    </span>
-                    (555) 123-4567
-                  </div>
-                  <div className="flex items-center text-lg">
-                    <span className="w-6 h-6 bg-red-600 rounded-full mr-4 flex items-center justify-center">
-                      ✉️
-                    </span>
-                    info@smartsurveyors.com
-                  </div>
-                  <div className="flex items-center text-lg">
-                    <span className="w-6 h-6 bg-red-600 rounded-full mr-4 flex items-center justify-center">
-                      📍
-                    </span>
-                    123 Survey Street, Your City, ST 12345
-                  </div>
-                </div>
-              </div>
-              <div className="order-first md:order-last">
-                <div className="bg-white rounded-2xl p-8">
-                  <h3 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900 font-playfair">
-                    Get Your Free Quote
-                  </h3>
-                  <form className="space-y-6">
-                    <div>
-                      <label
-                        htmlFor="name"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        placeholder="Your full name"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        placeholder="your@email.com"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="phone"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        placeholder="(555) 123-4567"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="service"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Service Needed
-                      </label>
-                      <select
-                        id="service"
-                        name="service"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      >
-                        <option value="">Select a service</option>
-                        <option value="boundary">Boundary Survey</option>
-                        <option value="building">Building Set-Out</option>
-                        <option value="autocad">AutoCAD Drafting</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="message"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Project Details
-                      </label>
-                      <textarea
-                        id="message"
-                        name="message"
-                        rows={4}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        placeholder="Tell us about your project..."
-                      ></textarea>
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full btn btn-primary text-lg py-4"
-                    >
-                      Send Message
-                    </button>
-                  </form>
-                </div>
-              </div>
+        <section className="section bg-sand-400" data-index="3">
+          <div className="container mx-auto h-full flex flex-col justify-center items-center px-8 text-center">
+            <h2
+              className="font-heading font-semibold heading-tight mb-8 reveal floating text-black"
+              style={{ fontSize: "clamp(64px, 8vw, 88px)", lineHeight: "0.9" }}
+            >
+              Let&apos;s Survey Together
+            </h2>
+            <p
+              className="font-body text-gray-700 max-w-4xl mb-16 reveal"
+              style={{
+                fontSize: "clamp(18px, 4vw, 22px)",
+                lineHeight: "1.5",
+                transitionDelay: "0.2s",
+              }}
+            >
+              Ready to start your surveying project? Contact our licensed
+              professional surveyors for accurate, reliable, and timely
+              surveying services.
+            </p>
+            <div className="reveal" style={{ transitionDelay: "0.4s" }}>
+              <button
+                className="bg-red-500 text-white px-12 py-5 md:px-16 md:py-5 font-body transition-all duration-300 magnetic text-lg md:text-xl tracking-wide rounded-full w-full md:w-auto max-w-sm md:max-w-none"
+                style={{
+                  backgroundColor: "#ef4444",
+                  minHeight: "48px",
+                  fontSize: "16px",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#991b1b";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = "#ef4444";
+                  }
+                }}
+                onTouchStart={(e) => {
+                  e.currentTarget.style.backgroundColor = "#991b1b";
+                }}
+                onTouchEnd={(e) => {
+                  e.currentTarget.style.backgroundColor = "#ef4444";
+                }}
+              >
+                Get Your Quote
+              </button>
             </div>
           </div>
         </section>
