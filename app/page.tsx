@@ -643,7 +643,7 @@ export default function Home() {
               right: 0,
               bottom: 0,
               backgroundColor: "rgba(255, 255, 255, 0.45)",
-              backdropFilter: "blur(2px)",
+              backdropFilter: "blur(0.65px)",
               zIndex: 1,
               pointerEvents: "none",
             }}
@@ -658,7 +658,7 @@ export default function Home() {
               right: 0,
               bottom: 0,
               backgroundColor: "rgba(255, 255, 255, 0.25)",
-              backdropFilter: "blur(4px)",
+              backdropFilter: "blur(1.3px)",
               zIndex: 1,
               pointerEvents: "none",
             }}
@@ -801,7 +801,7 @@ export default function Home() {
               ></div>
             </div>
           </div>
-          {/* Light overlay for better contrast - similar to hero section */}
+          {/* Light overlay for better contrast */}
           <div
             style={{
               position: "absolute",
@@ -828,16 +828,16 @@ export default function Home() {
               }}
             >
               <div className="relative">
-                {/* Glow background for title */}
+                {/* Enhanced glow background for title */}
                 <div
                   style={{
                     position: "absolute",
                     top: "50%",
                     left: "50%",
-                    width: "150%",
-                    height: "150%",
+                    width: "170%",
+                    height: "170%",
                     background:
-                      "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.4) 40%, rgba(255, 255, 255, 0) 80%)",
+                      "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 25%, rgba(255, 255, 255, 0.3) 55%, rgba(255, 255, 255, 0) 80%)",
                     filter: "blur(40px)",
                     transform: "translate(-50%, -50%) scaleX(1.5) scaleY(1)",
                     zIndex: -1,
@@ -857,16 +857,16 @@ export default function Home() {
                 </h1>
               </div>
               <div className="relative">
-                {/* Glow background for subtitle */}
+                {/* Enhanced glow background for subtitle */}
                 <div
                   style={{
                     position: "absolute",
                     top: "50%",
                     left: "50%",
-                    width: "140%",
-                    height: "140%",
+                    width: "160%",
+                    height: "160%",
                     background:
-                      "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.4) 40%, rgba(255, 255, 255, 0) 80%)",
+                      "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.6) 30%, rgba(255, 255, 255, 0.2) 60%, rgba(255, 255, 255, 0) 80%)",
                     filter: "blur(40px)",
                     transform: "translate(-50%, -50%) scaleX(1.5) scaleY(1)",
                     zIndex: -1,
